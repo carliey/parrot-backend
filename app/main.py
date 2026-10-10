@@ -1,0 +1,240 @@
+import asyncio
+import hashlib
+import secrets
+import time
+import uuid
+
+from fastapi import FastAPI, Header, HTTPException, Request
+
+from .lessons import LESSONS, LESSON_VERSION, tutor_prompt
+from .provider import make_provider
+from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
+from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
+from .store import Store, now
+
+provider = make_provider()
+store = Store()
+locks: dict[str, asyncio.Lock] = {}
+capacity = asyncio.Semaphore(1)
+waiting = asyncio.Semaphore(2)
+app = FastAPI(title='Parrot Hausa Practice API', version='0.1.0')
+
+
+def session_for(sid: str, authorization: str | None):
+    token = (authorization or '').removeprefix('Bearer ').strip()
+    with store.connect() as db:
+        row = store.session(db, sid)
+    if not row or not token or not secrets.compare_digest(row['token_hash'], hashlib.sha256(token.encode()).hexdigest()):
+        raise HTTPException(404, detail={'code': 'session_not_found', 'message': 'Session not found or access denied'})
+    if row['provider_mode'] != provider.mode:
+        raise HTTPException(503, detail={'code': 'provider_changed', 'message': 'Session provider is unavailable'})
+    return row
+
+
+async def generate_bounded(messages, max_tokens, schema=None):
+    try:
+        await asyncio.wait_for(waiting.acquire(), timeout=0.01)
+    except TimeoutError:
+        raise HTTPException(429, detail={'code': 'queue_full', 'message': 'Tutor queue is full; retry'})
+    try:
+        try:
+            await asyncio.wait_for(capacity.acquire(), timeout=2)
+        except TimeoutError:
+            raise HTTPException(429, detail={'code': 'queue_full', 'message': 'Tutor is busy; retry'})
+    finally:
+        waiting.release()
+    try:
+        return await asyncio.to_thread(provider.generate, messages, max_tokens, schema)
+    finally:
+        capacity.release()
+
+
+@app.get('/health', response_model=HealthResponse)
+def health():
+    return {'status': 'alive'}
+
+
+@app.get('/ready', response_model=ReadyResponse)
+def ready():
+    return {'ready': provider.ready(), 'provider_mode': provider.mode, 'model_version': provider.version}
+
+
+@app.get('/lessons', response_model=LessonsResponse)
+def lessons():
+    return {'version': LESSON_VERSION, 'language_review': 'pending', 'lessons': list(LESSONS.values())}
+
+
+@app.post('/sessions', response_model=StartResponse)
+def start(body: StartRequest):
+    if not provider.ready():
+        raise HTTPException(503, detail={'code': 'provider_unavailable', 'message': 'Model is not loaded'})
+    sid, token = str(uuid.uuid4()), secrets.token_urlsafe(32)
+    with store.connect() as db:
+        db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+                   (sid, hashlib.sha256(token.encode()).hexdigest(), body.topic, LESSON_VERSION,
+                    provider.mode, provider.version, int(body.consent), body.participant_id,
+                    'active', now(), None, None))
+    return StartResponse(session_id=sid, access_token=token, provider_mode=provider.mode,
+                         initial_tutor_message=LESSONS[body.topic]['opening'])
+
+
+@app.post('/sessions/{session_id}/turns', response_model=TurnResponse)
+async def turn(session_id: str, body: TurnRequest, authorization: str | None = Header(default=None)):
+    session_for(session_id, authorization)
+    lock = locks.setdefault(session_id, asyncio.Lock())
+    if lock.locked():
+        raise HTTPException(429, detail={'code': 'session_busy', 'message': 'Another turn is processing'})
+    async with lock:
+        with store.connect() as db:
+            session = store.session(db, session_id)
+            if session['status'] != 'active':
+                raise HTTPException(409, detail={'code': 'session_finished', 'message': 'Session is finished'})
+            prior = db.execute('SELECT * FROM turns WHERE session_id=? AND turn_id=?',
+                               (session_id, body.turn_id)).fetchone()
+            voice = db.execute('SELECT transcript FROM transcriptions WHERE session_id=? AND turn_id=?',
+                               (session_id, body.turn_id)).fetchone()
+            if voice and voice['transcript'] != body.text:
+                raise HTTPException(409, detail={'code': 'transcript_mismatch', 'message': 'This voice turn must use its ASR transcript'})
+            if prior:
+                if prior['learner_text'] != body.text:
+                    raise HTTPException(409, detail={'code': 'turn_id_conflict', 'message': 'Turn ID was used with different text'})
+                if prior['tutor_text']:
+                    return TurnResponse(turn_id=body.turn_id, tutor_response=prior['tutor_text'],
+                                        processing_ms=prior['processing_ms'], provider_mode=provider.mode)
+            rows = store.turns(db, session_id)
+            messages = [{'role': 'system', 'content': tutor_prompt(session['topic'])},
+                        {'role': 'assistant', 'content': LESSONS[session['topic']]['opening']}]
+            for row in rows[-6:]:
+                if row['tutor_text']:
+                    messages += [{'role': 'user', 'content': row['learner_text']},
+                                 {'role': 'assistant', 'content': row['tutor_text']}]
+            messages.append({'role': 'user', 'content': body.text})
+        begun = time.monotonic()
+        try:
+            reply = await generate_bounded(messages, 80)
+            if not reply:
+                raise ValueError('Empty model response')
+        except HTTPException:
+            raise
+        except Exception as exc:
+            with store.connect() as db:
+                db.execute('INSERT OR REPLACE INTO turns VALUES (?,?,?,?,?,?,?)',
+                           (session_id, body.turn_id, body.text, None, None, type(exc).__name__, now()))
+            raise HTTPException(503, detail={'code': 'inference_failed', 'message': 'Tutor response failed; retry this turn'})
+        ms = int((time.monotonic() - begun) * 1000)
+        with store.connect() as db:
+            db.execute('INSERT OR REPLACE INTO turns VALUES (?,?,?,?,?,?,?)',
+                       (session_id, body.turn_id, body.text, reply, ms, None, now()))
+        return TurnResponse(turn_id=body.turn_id, tutor_response=reply,
+                            processing_ms=ms, provider_mode=provider.mode)
+
+
+@app.post('/sessions/{session_id}/finish', response_model=FinishResponse)
+async def finish(session_id: str, authorization: str | None = Header(default=None)):
+    session_for(session_id, authorization)
+    lock = locks.setdefault(session_id, asyncio.Lock())
+    async with lock:
+        with store.connect() as db:
+            session = store.session(db, session_id)
+            if session['feedback']:
+                return FinishResponse(session_id=session_id,
+                                      feedback=Feedback.model_validate_json(session['feedback']),
+                                      provider_mode=provider.mode)
+            turns = [r for r in store.turns(db, session_id) if r['tutor_text']]
+        if len(turns) < 2:
+            feedback = Feedback(insufficient_evidence=True, tasks_completed=[], expressions_used=[],
+                corrections=[], phrases_to_review=LESSONS[session['topic']]['phrases'][:2],
+                message='Not enough conversation for detailed feedback yet.')
+        else:
+            transcript = '\n'.join(f"Learner: {r['learner_text']}\nTutor: {r['tutor_text']}" for r in turns)
+            prompt = [
+                {'role': 'system', 'content': 'Return concise JSON feedback. At most 2 items per list and at most 1 correction. Keep each explanation under 12 words. Use only exact lesson task strings. Expressions and correction originals must be verbatim learner text. If no actual error, corrections must be empty. No scores or pronunciation claims.'},
+                {'role': 'user', 'content': f"Lesson tasks: {LESSONS[session['topic']]['tasks']}\nTranscript:\n{transcript}"},
+            ]
+            feedback = None
+            for _ in range(2):
+                try:
+                    raw = await generate_bounded(prompt, 600, Feedback.model_json_schema())
+                    feedback = Feedback.model_validate_json(raw)
+                    break
+                except HTTPException:
+                    raise
+                except Exception:
+                    continue
+            if feedback is None:
+                raise HTTPException(503, detail={'code': 'feedback_invalid', 'message': 'Could not validate feedback; retry finish'})
+            learner_text = '\n'.join(r['learner_text'] for r in turns).casefold()
+            evidence_markers = ({
+                'greet someone': ('sannu', 'assalamu'),
+                'respond to a greeting': ('lafiya', 'alhamdulillahi'),
+                'introduce yourself': ('sunana',),
+            } if session['topic'] == 'greetings' else {
+                'greet the seller': ('sannu', 'assalamu'),
+                'ask for an item': ('ina son', 'a ba ni'),
+                'ask its price': ('nawa',),
+                'respond to the price': ('na gode', 'zan saya'),
+            })
+            allowed_tasks = {task for task, markers in evidence_markers.items()
+                             if any(marker in learner_text for marker in markers)}
+            allowed_phrases = set(LESSONS[session['topic']]['phrases'])
+            feedback = Feedback(
+                insufficient_evidence=False,
+                tasks_completed=[t for t in feedback.tasks_completed if t in allowed_tasks][:2],
+                expressions_used=[e for e in feedback.expressions_used if e and e.casefold() in learner_text][:2],
+                corrections=[c for c in feedback.corrections if c.original and c.original.casefold() in learner_text
+                             and c.original.casefold() != c.suggested.casefold() and c.suggested in allowed_phrases][:1],
+                phrases_to_review=[p for p in feedback.phrases_to_review if p in allowed_phrases][:2],
+                message='Feedback based on this text conversation. No pronunciation assessment was made.',
+            )
+        with store.connect() as db:
+            db.execute("UPDATE sessions SET status='finished', finished_at=?, feedback=? WHERE id=?",
+                       (now(), feedback.model_dump_json(), session_id))
+        return FinishResponse(session_id=session_id, feedback=feedback, provider_mode=provider.mode)
+
+
+@app.post('/sessions/{session_id}/transcriptions/{turn_id}', response_model=TranscriptionResponse)
+async def transcribe(session_id: str, turn_id: str, request: Request,
+                     authorization: str | None = Header(default=None)):
+    session = session_for(session_id, authorization)
+    if session['status'] != 'active':
+        raise HTTPException(409, detail={'code': 'session_finished', 'message': 'Session is finished'})
+    if not (1 <= len(turn_id) <= 80 and all(c.isalnum() or c in '_-' for c in turn_id)):
+        raise HTTPException(422, detail={'code': 'invalid_turn_id', 'message': 'Invalid turn ID'})
+    if request.headers.get('content-type', '').split(';')[0] not in ('audio/mp4', 'audio/m4a', 'audio/aac', 'audio/webm', 'audio/wav'):
+        raise HTTPException(415, detail={'code': 'invalid_audio', 'message': 'Unsupported audio type'})
+    with store.connect() as db:
+        prior = db.execute('SELECT * FROM transcriptions WHERE session_id=? AND turn_id=?',
+                           (session_id, turn_id)).fetchone()
+    if prior:
+        return TranscriptionResponse(turn_id=turn_id, transcript=prior['transcript'],
+                                     asr_model=prior['asr_model'], processing_ms=prior['processing_ms'])
+    chunks, size = [], 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > 5_000_000:
+            raise HTTPException(413, detail={'code': 'audio_too_large', 'message': 'Recording exceeds 5 MB'})
+        chunks.append(chunk)
+    if size == 0:
+        raise HTTPException(422, detail={'code': 'empty_audio', 'message': 'Recording is empty'})
+    begun = time.monotonic()
+    try:
+        transcript = await asyncio.to_thread(transcribe_audio, b''.join(chunks))
+    except ValueError as exc:
+        raise HTTPException(422, detail={'code': 'invalid_audio', 'message': str(exc)}) from exc
+    except RuntimeError as exc:
+        raise HTTPException(503, detail={'code': 'asr_unavailable', 'message': str(exc)}) from exc
+    except Exception as exc:
+        raise HTTPException(503, detail={'code': 'asr_unavailable', 'message': f'Hausa ASR failed: {type(exc).__name__}'}) from exc
+    if not transcript or len(transcript) > 500:
+        raise HTTPException(422, detail={'code': 'no_speech', 'message': 'No usable Hausa speech was detected; try again'})
+    ms = int((time.monotonic() - begun) * 1000)
+    with store.connect() as db:
+        db.execute('INSERT OR IGNORE INTO transcriptions VALUES (?,?,?,?,?,?)',
+                   (session_id, turn_id, transcript, ASR_MODEL_ID, ms, now()))
+    return TranscriptionResponse(turn_id=turn_id, transcript=transcript,
+                                 asr_model=ASR_MODEL_ID, processing_ms=ms)
+
+
+@app.post('/speech/synthesize')
+def synthesis_unavailable():
+    raise HTTPException(501, detail={'code': 'speech_unavailable', 'message': 'Hausa TTS is not configured'})
