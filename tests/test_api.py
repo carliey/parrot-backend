@@ -126,7 +126,7 @@ def test_voice_turn_is_linked_to_official_asr_in_export(client, monkeypatch):
     session=response.json(); auth={'Authorization':f"Bearer {session['access_token']}"}
     path=f"/sessions/{session['session_id']}"
     assert client.post(f'{path}/transcriptions/voice-1', content=b'audio', headers={'Content-Type':'audio/mp4'}).status_code==404
-    transcription=client.post(f'{path}/transcriptions/voice-1', content=b'audio', headers={**auth,'Content-Type':'audio/mp4'})
+    transcription=client.post(f'{path}/transcriptions/voice-1', content=b'audio', headers={**auth,'Content-Type':'application/octet-stream'})
     assert transcription.status_code==200
     assert transcription.json()['asr_model']=='NCAIR1/Hausa-ASR'
     assert client.post(f'{path}/turns', json={'turn_id':'voice-1','text':'Changed text'}, headers=auth).status_code==409

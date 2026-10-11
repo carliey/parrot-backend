@@ -8,10 +8,11 @@ This Mac reports Apple M1 Pro, arm64 Python, 16 GB unified memory and about 160 
 
 ```
 /opt/homebrew/bin/python3.12 -m venv .venv312
-.venv312/bin/pip install -r requirements-speech.txt
+.venv312/bin/pip install -r requirements.txt
+cp -n .env.example .env            # replace HF_TOKEN in .env before starting
 ollama pull hf.co/QuantFactory/N-ATLaS-GGUF:Q4_K_M
 ollama serve                       # if not already running
-.venv312/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+.venv312/bin/uvicorn app.main:app --env-file .env --host 0.0.0.0 --port 8000 --workers 1
 ```
 
 Never use `--reload` or multiple workers with a local inference process. Ollama loads the quantized model on demand. `PARROT_DB` chooses the SQLite path. Do not commit `.env`, tokens or database files. If the original gated model is needed, accept its conditions at https://huggingface.co/NCAIR1/N-ATLaS and authenticate with `hf auth login`; the chosen community GGUF may not require that grant. No token is printed or stored by this app.
@@ -30,13 +31,25 @@ A start response contains `session_id`, opaque `access_token`, `provider_mode`, 
 
 Run tests with `.venv312/bin/pytest -q`. Export consenting real sessions only with `.venv312/bin/python export_sessions.py > real-sessions.jsonl`. Export is a local CLI operation, not an HTTP endpoint. `consent=false` is the default; participant IDs are optional pseudonyms. No raw audio is stored. SQLite storage is for local development and must be replaced or hardened before public deployment. Add TLS, authentication, rate limits, token expiry, data retention policy and privacy review before exposing this server publicly.
 
-Hausa ASR is available through the optional local speech runtime described below. TTS is still unavailable (`POST /speech/synthesize` returns 501); the text model does not produce audio.
+Hausa ASR can use the configured Hugging Face Space or the optional local speech runtime described below. TTS is still unavailable (`POST /speech/synthesize` returns 501); the text model does not produce audio.
 
 ## Hausa voice practice and validation
 
-Install the optional ASR dependencies with `.venv312/bin/pip install -r requirements-speech.txt`. Accept the conditions for [NCAIR1/Hausa-ASR](https://huggingface.co/NCAIR1/Hausa-ASR) on Hugging Face, then authenticate this environment with `.venv312/bin/hf auth login` (or set `HF_TOKEN` outside the repository). `ffmpeg` must be on `PATH`. The first voice request downloads and loads the official Whisper Small checkpoint; later requests reuse it. N-ATLaS still runs through Ollama.
+### Hugging Face Space (configured in .env.example)
 
-In real practice mode, the phone sends a recording to `POST /sessions/{id}/transcriptions/{turn_id}` with the session bearer token and an `audio/mp4` or `audio/webm` body. The backend decodes up to 30 seconds to 16 kHz mono, runs `NCAIR1/Hausa-ASR`, and returns the transcript. The phone then sends that exact transcript to the existing tutor turn endpoint with the same turn ID. The backend links the ASR model, transcript, timing, and tutor reply in the local database. No raw audio is stored on the backend, and the phone deletes its recording after the request.
+Copy `.env.example` to `.env` and replace `HF_TOKEN=hf_replace_with_your_token` in **.env only**. The actual token must never go in the example file or mobile app. `.env` is ignored by Git. Start Uvicorn with `--env-file .env` as shown above; a plain Uvicorn command does not load this file automatically. Existing shell environment variables take precedence over values in this file.
+
+`PARROT_ASR_PROVIDER=hf_space` uses `phaeeza/Hausa-tutor-conversation-voice-first` and its `/check_hausa` API. The backend validates the audio with ffmpeg, uploads a temporary 16 kHz mono WAV, and uses only the returned transcription. The Space's hardcoded score and target lesson are ignored. No local Torch/Transformers install or ASR model download is needed for this mode. `ffmpeg` must still be on PATH (on this Mac: `brew install ffmpeg` if missing).
+
+The token authenticates requests to the Space; ZeroGPU quota is associated with the authenticated account. Space errors and quota failures return HTTP 503 without a fabricated transcript. `PARROT_ASR_TIMEOUT_SECONDS=90` limits the prediction wait; connection/upload requests have a separate 30-second network timeout. A timeout requests cancellation, but does not guarantee that remote computation stops immediately. The Space must remain available and keep its existing three-output `/check_hausa` contract. The default provider without environment configuration is still `local`.
+
+Recordings leave your backend and are uploaded to your partner's Hugging Face Space. The temporary backend WAV is deleted after success or failure. Hugging Face/Gradio may cache the uploaded file remotely; configure retention on the Space before collecting participant recordings. N-ATLaS still runs through your local Ollama instance, so keep it running. The mobile app needs no API changes: it continues to call your backend.
+
+### Optional local ASR
+
+Set `PARROT_ASR_PROVIDER=local` and install `.venv312/bin/pip install -r requirements-speech.txt`. Accept the conditions for [NCAIR1/Hausa-ASR](https://huggingface.co/NCAIR1/Hausa-ASR) on Hugging Face, then authenticate this environment with `.venv312/bin/hf auth login` (or set `HF_TOKEN` in `.env`). The first voice request downloads and loads the official Whisper Small checkpoint; later requests reuse it.
+
+In real practice mode, the phone sends the recording bytes to `POST /sessions/{id}/transcriptions/{turn_id}` with the session bearer token. The backend accepts Expo's native upload content type and lets ffmpeg identify and decode the bounded audio to 16 kHz mono, runs `NCAIR1/Hausa-ASR` locally or through the Space, and returns the transcript. The phone then sends that exact transcript to the existing tutor turn endpoint with the same turn ID. The backend links the ASR model, transcript, timing, and tutor reply in the local database. No raw audio is retained on the backend, and the phone deletes its recording after the request.
 
 For real user validation, ask each participant for a pseudonymous tester code such as `P01` and optional consent to export their text transcript. Use distinct codes for distinct people; never enter names or phone numbers. Only successful official-ASR plus N-ATLaS exchanges with consent appear in the evidence count. Run `.venv312/bin/python summarize_validation.py` for a summary and `.venv312/bin/python export_sessions.py > real-sessions.jsonl` for detailed consenting records. Review and redact the JSONL before sharing it; do not commit the database or raw export. The NAIC page requires at least 50 documented real interactions for Voice-First Access. A real device and real model still need an end-to-end smoke test before collecting participants.
 

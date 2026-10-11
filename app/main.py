@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import secrets
 import time
 import uuid
@@ -18,6 +19,7 @@ locks: dict[str, asyncio.Lock] = {}
 capacity = asyncio.Semaphore(1)
 waiting = asyncio.Semaphore(2)
 app = FastAPI(title='Parrot Hausa Practice API', version='0.1.0')
+logger = logging.getLogger('uvicorn.error')
 
 
 def session_for(sid: str, authorization: str | None):
@@ -200,8 +202,8 @@ async def transcribe(session_id: str, turn_id: str, request: Request,
         raise HTTPException(409, detail={'code': 'session_finished', 'message': 'Session is finished'})
     if not (1 <= len(turn_id) <= 80 and all(c.isalnum() or c in '_-' for c in turn_id)):
         raise HTTPException(422, detail={'code': 'invalid_turn_id', 'message': 'Invalid turn ID'})
-    if request.headers.get('content-type', '').split(';')[0] not in ('audio/mp4', 'audio/m4a', 'audio/aac', 'audio/webm', 'audio/wav'):
-        raise HTTPException(415, detail={'code': 'invalid_audio', 'message': 'Unsupported audio type'})
+    # Expo's native File upload may use application/octet-stream or omit the
+    # media type. Decode the bounded bytes with ffmpeg instead of trusting it.
     with store.connect() as db:
         prior = db.execute('SELECT * FROM transcriptions WHERE session_id=? AND turn_id=?',
                            (session_id, turn_id)).fetchone()
@@ -222,6 +224,8 @@ async def transcribe(session_id: str, turn_id: str, request: Request,
     except ValueError as exc:
         raise HTTPException(422, detail={'code': 'invalid_audio', 'message': str(exc)}) from exc
     except RuntimeError as exc:
+        # ASR RuntimeErrors contain safe messages, never remote exception details.
+        logger.warning('Transcription unavailable: %s', exc)
         raise HTTPException(503, detail={'code': 'asr_unavailable', 'message': str(exc)}) from exc
     except Exception as exc:
         raise HTTPException(503, detail={'code': 'asr_unavailable', 'message': f'Hausa ASR failed: {type(exc).__name__}'}) from exc
