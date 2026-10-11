@@ -9,6 +9,8 @@ class StubProvider:
     mode='real'; version='test-n-atlas'
     def ready(self): return True
     def generate(self, messages, max_tokens=80, format_schema=None):
+        if format_schema and ('anyOf' in format_schema or 'skills' in format_schema.get('properties', {})):
+            return json.dumps({'reply': 'Yauwa', 'status': 'understood', 'skills': []})
         if format_schema and 'reply' in format_schema['properties']:
             return json.dumps({'reply': format_schema['properties']['reply']['enum'][0]})
         if format_schema:
@@ -222,7 +224,7 @@ def test_invalid_reply_can_recover_on_constrained_retry(client, monkeypatch):
 
 def test_lesson_metadata_and_old_sessions(client):
     data = client.get('/lessons').json()
-    assert data['version'] == 'practice-3'
+    assert data['version'] == 'practice-4'
     assert {lesson['id'] for lesson in data['lessons']} == {'greetings', 'introductions', 'buying-things', 'general-practice'}
     session, auth = create(client)
     with main.store.connect() as db:
@@ -239,7 +241,7 @@ def test_combined_practice_accepts_variants_order_and_repeats(client):
     assert session['lesson_progress']['total_steps'] == 8
     examples = [('lafiya law', 0), ('saanu', 1), ('sannu', 1), ('toh madala', 1),
                 ('sunana Amina', 2), ('nawa ne wanan', 3), ('toh bani', 4),
-                ('kai fa', 5), ('ina yini', 6), ('ya kike', 7), ('nagode', 8)]
+                ('ya sunanka', 5), ('ina yini', 6), ('ya kike', 7), ('nagode', 8)]
     for i, (text, expected) in enumerate(examples):
         response = client.post(path + '/turns', headers=auth, json={'turn_id':str(i), 'text':text})
         assert response.status_code == 200, response.text

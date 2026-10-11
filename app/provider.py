@@ -21,7 +21,7 @@ class OllamaProvider:
         except (OSError, KeyError, ValueError): return False
     def generate(self, messages: list[dict[str, str]], max_tokens: int = 80, format_schema: dict | None = None) -> str:
         payload = {'model': self.model_id, 'messages': messages, 'stream': False,
-            'options': {'num_predict': max_tokens, 'num_ctx': 1024, 'temperature': 0 if format_schema else 0.2}}
+            'options': {'num_predict': max_tokens, 'num_ctx': 4096, 'temperature': 0 if format_schema else 0.2}}
         if format_schema: payload['format'] = format_schema
         body = json.dumps(payload).encode()
         request = urllib.request.Request(self.url + '/api/chat', body, {'Content-Type':'application/json'})

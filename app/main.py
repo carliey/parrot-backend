@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import json
 import logging
 import secrets
 import time
@@ -10,6 +11,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from .lessons import (LESSONS, LESSON_VERSION, tutor_prompt, accepts, completed_steps,
                       progress, reply_schema, validated_reply, matching_step)
 from .provider import make_provider
+from . import general_practice
 from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
 from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
 from .store import Store, now
@@ -112,17 +114,22 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
                                         processing_ms=prior['processing_ms'], provider_mode=provider.mode,
                                         lesson_progress=progress(session['topic'], rows[:prior_index + 1]))
             state = progress(session['topic'], rows)
-            if state['complete']:
+            mixed = LESSONS[session['topic']]['mode'] == 'mixed'
+            if state['complete'] and not mixed:
                 raise HTTPException(409, detail={'code': 'lesson_complete', 'message': 'You have completed the lesson steps. Tap Finish for your practice notes.'})
-            match = matching_step(session['topic'], rows, body.text)
-            if match is None:
-                instruction = ('Use a phrase from greetings, introductions, or buying things'
-                               if LESSONS[session['topic']]['mode'] == 'mixed' else state['instruction'])
-                raise HTTPException(422, detail={'code': 'lesson_step_expected',
-                    'message': f"{instruction}. You can try “{state['hint']}” ({state['hint_english']}).",
-                    'lesson_progress': state})
-            step_index, step = match
-            messages = [{'role': 'system', 'content': tutor_prompt(session['topic'], step_index)},
+            if mixed:
+                system_prompt = general_practice.tutor_prompt(body.text, rows)
+                schema = general_practice.response_schema(body.text, rows)
+            else:
+                match = matching_step(session['topic'], rows, body.text)
+                if match is None:
+                    raise HTTPException(422, detail={'code': 'lesson_step_expected',
+                        'message': f"{state['instruction']}. You can try “{state['hint']}” ({state['hint_english']}).",
+                        'lesson_progress': state})
+                step_index, step = match
+                system_prompt = tutor_prompt(session['topic'], step_index)
+                schema = reply_schema(step)
+            messages = [{'role': 'system', 'content': system_prompt},
                         {'role': 'assistant', 'content': LESSONS[session['topic']]['opening']}]
             for row in rows[-6:]:
                 if row['tutor_text']:
@@ -130,16 +137,27 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
                                  {'role': 'assistant', 'content': row['tutor_text']}]
             messages.append({'role': 'user', 'content': body.text})
         begun = time.monotonic()
+        skill_evidence = []
+        conversation_status = None
         try:
             for attempt in range(2):
-                raw = await generate_bounded(messages, 80, reply_schema(step))
+                raw = await generate_bounded(messages, 400 if mixed else 80, schema)
                 try:
-                    reply = validated_reply(raw, step)
+                    if mixed:
+                        reply, conversation_status, skill_evidence = general_practice.validate_response(raw, body.text, rows)
+                    else:
+                        reply = validated_reply(raw, step)
                     break
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as validation_error:
                     if attempt:
                         raise
-                    messages[0]['content'] += ' Your previous output was invalid. Follow the exact reply choices and JSON schema.'
+                    messages[0]['content'] += (' Your previous output was invalid. Use the JSON schema, short familiar replies, '
+                                              f'and verbatim skill evidence. Fix this issue: {validation_error}.' if mixed else
+                                              ' Your previous output was invalid. Follow the exact reply choices and JSON schema.')
+                    if mixed:
+                        schema = general_practice.repair_schema(body.text, rows)
+                        messages.extend([{'role': 'assistant', 'content': raw},
+                                         {'role': 'user', 'content': body.text}])
         except HTTPException:
             raise
         except Exception as exc:
@@ -151,6 +169,9 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
         with store.connect() as db:
             db.execute('INSERT OR REPLACE INTO turns VALUES (?,?,?,?,?,?,?)',
                        (session_id, body.turn_id, body.text, reply, ms, None, now()))
+            if mixed:
+                db.execute('INSERT OR REPLACE INTO turn_assessments VALUES (?,?,?,?)',
+                           (session_id, body.turn_id, conversation_status, json.dumps(skill_evidence, ensure_ascii=False)))
             state = progress(session['topic'], store.turns(db, session_id))
         return TurnResponse(turn_id=body.turn_id, tutor_response=reply,
                             processing_ms=ms, provider_mode=provider.mode, lesson_progress=state)
@@ -193,12 +214,15 @@ async def finish(session_id: str, authorization: str | None = Header(default=Non
             learner_text = '\n'.join(r['learner_text'] for r in turns).casefold()
             allowed_tasks = [step['task'] for step in completed_steps(session['topic'], turns)]
             allowed_phrases = set(LESSONS[session['topic']]['phrases'])
+            understood_evidence = [item['evidence'].casefold() for row in turns
+                                   for item in row.get('skill_evidence', [])]
             feedback = Feedback(
                 insufficient_evidence=False,
                 tasks_completed=allowed_tasks,
                 expressions_used=[e for e in feedback.expressions_used if e and e.casefold() in learner_text][:2],
                 corrections=[c for c in feedback.corrections if c.original and c.original.casefold() in learner_text
                              and c.original.casefold() != c.suggested.casefold() and c.suggested in allowed_phrases
+                             and c.original.casefold() not in understood_evidence
                              and not any(accepts(step, c.original) for step in LESSONS[session['topic']]['steps'])][:1],
                 phrases_to_review=[p for p in feedback.phrases_to_review if p in allowed_phrases][:2],
                 message='Feedback based on this text conversation. No pronunciation assessment was made.',

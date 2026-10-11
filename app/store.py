@@ -18,7 +18,10 @@ class Store:
               CREATE TABLE IF NOT EXISTS transcriptions (
               session_id TEXT NOT NULL, turn_id TEXT NOT NULL, transcript TEXT NOT NULL,
               asr_model TEXT NOT NULL, processing_ms INTEGER NOT NULL, created_at TEXT NOT NULL,
-              PRIMARY KEY(session_id,turn_id));''')
+              PRIMARY KEY(session_id,turn_id));
+              CREATE TABLE IF NOT EXISTS turn_assessments (
+              session_id TEXT NOT NULL, turn_id TEXT NOT NULL, status TEXT NOT NULL,
+              skill_evidence TEXT NOT NULL, PRIMARY KEY(session_id,turn_id));''')
     @contextmanager
     def connect(self):
         db = sqlite3.connect(self.path, timeout=15)
@@ -30,7 +33,18 @@ class Store:
     def session(self, db, sid):
         return db.execute('SELECT * FROM sessions WHERE id=?', (sid,)).fetchone()
     def turns(self, db, sid):
-        return db.execute('SELECT * FROM turns WHERE session_id=? ORDER BY created_at,rowid', (sid,)).fetchall()
+        rows = db.execute('SELECT * FROM turns WHERE session_id=? ORDER BY created_at,rowid', (sid,)).fetchall()
+        assessments = {r['turn_id']: r for r in db.execute(
+            'SELECT * FROM turn_assessments WHERE session_id=?', (sid,))}
+        result = []
+        for row in rows:
+            item = dict(row)
+            if row['turn_id'] in assessments:
+                assessment = assessments[row['turn_id']]
+                item['conversation_status'] = assessment['status']
+                item['skill_evidence'] = json.loads(assessment['skill_evidence'])
+            result.append(item)
+        return result
     def export(self):
         with self.connect() as db:
             for row in db.execute("SELECT * FROM sessions WHERE provider_mode='real' AND consent=1 ORDER BY created_at"):

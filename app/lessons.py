@@ -91,9 +91,13 @@ def completed_steps(topic: str, rows) -> list[dict]:
         demonstrated = set()
         for row in rows:
             if row['tutor_text']:
-                match = matching_step(topic, (), row['learner_text'])
-                if match:
-                    demonstrated.add(match[1]['id'])
+                if 'skill_evidence' in row.keys():
+                    demonstrated.update(item['skill'] for item in row['skill_evidence'])
+                else:
+                    # Compatibility for previously recorded sessions.
+                    match = matching_step(topic, (), row['learner_text'])
+                    if match:
+                        demonstrated.add(match[1]['id'])
         return [step for step in steps if step.get('required', True) and step['id'] in demonstrated]
     completed = []
     for row in rows:
@@ -113,8 +117,9 @@ def progress(topic: str, rows=()) -> dict:
     remaining = [step for step in steps if step['id'] not in {s['id'] for s in done}]
     current = remaining[0] if remaining else None
     instruction = current['task'].capitalize() if current else 'Lesson complete. Finish to see your practice notes.'
-    if current and lesson['mode'] == 'mixed':
-        instruction = 'Greet, introduce yourself, and buy an item. Follow your own order.'
+    if lesson['mode'] == 'mixed':
+        instruction = ('All practice skills covered. Keep chatting, or finish for your notes.' if not current
+                       else 'Chat about greetings, names, and shopping. Use your own words.')
     return {
         'completed_steps': count, 'total_steps': len(steps),
         'complete': current is None,

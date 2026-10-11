@@ -72,3 +72,9 @@ The final feedback path requests a JSON schema from Ollama and validates it with
 The virtual environment used Python 3.12 with FastAPI 0.142.2, Uvicorn 0.54.0, Pydantic 2.13.5, huggingface-hub 1.33.0, MLX 0.32.3, mlx-lm 0.32.0, Transformers 5.19.0, httpx 0.28.1, pytest 8.4.2. MLX and Transformers were installed for feasibility checks but the working inference path uses Ollama GGUF, not Torch. `hf auth whoami` in this environment reported “Not logged in”; the public quantized repository was still accessible. The gated original model would require accepting terms and authenticating this environment before direct access.
 
 In a later run, the model produced a structurally valid but linguistically poor correction (replacing Hausa “Sannu” with English “Hello”). The correction filter now discards suggestions outside the taught phrase list. Model feedback remains provisional and needs native-speaker review.
+
+## Conversational general practice (practice-4)
+
+General practice now accepts combined phrases and paraphrases through N-ATLaS, with short replies and separate evidence-backed skill tracking. It continues after the checklist is complete. Guided lessons retain their ordered, constrained exercises. Restart the backend and start a new session after this update; existing sessions retain their older lesson version. Reload the mobile app (or rebuild an installed APK) to enable continued input after all skills are covered.
+
+Run `.venv312/bin/python real_smoke_general.py` with Ollama running for a real-model check of combined greetings, introductions, a shopping paraphrase, contextual replies, unclear speech, and an off-topic instruction. It uses synthetic text, a temporary database and no export consent, so it does not count toward real-user validation.
