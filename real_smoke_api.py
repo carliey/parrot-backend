@@ -15,7 +15,7 @@ with TestClient(app) as client:
     session=response.json()
     print('initial_tutor:',session['initial_tutor_message'])
     headers={'Authorization':'Bearer '+session['access_token']}
-    for i,message in enumerate(['Sannu! Sunana Amina.','Me na ce maka sunana?'],1):
+    for i,message in enumerate(['Sannu', 'Ina kwana', 'Ya kake', 'Madallah'],1):
         start=time.monotonic()
         reply=client.post(f"/sessions/{session['session_id']}/turns",headers=headers,json={'turn_id':f'smoke-{i}','text':message})
         print(f'turn_{i}_status:',reply.status_code,'wall_seconds:',round(time.monotonic()-start,2))

@@ -1,0 +1,746 @@
+{
+  "version": "practice-3",
+  "language_review": "pending",
+  "content_source": "User-supplied vocabulary and cultural guidance, 11 October 2026",
+  "lessons": [
+    {
+      "id": "greetings",
+      "title": "Greetings",
+      "description": "Practise a short greeting, one phrase at a time.",
+      "scenario": "You play the elder greeting a younger person. The tutor responds as the younger person.",
+      "objective": "Greet someone, ask about their day and wellbeing, then close warmly.",
+      "color": "#DDE8C5",
+      "icon": "✳",
+      "opening": "You are the elder in this exercise. Start with “Sannu”.",
+      "cultural_notes": [
+        "In this lesson, “Ya kake?” / “Ya kike?” is used by an elder addressing a younger person. Do not use it to address an elder.",
+        "Use “Ya kake?” for a male addressee and “Ya kike?” for a female addressee.",
+        "The same afternoon and evening forms are taught here. The practice accepts morning, afternoon, or evening greetings."
+      ],
+      "vocabulary": [
+        {
+          "id": "g1",
+          "hausa": "Sannu",
+          "english": "Well done",
+          "response": "Yauwa",
+          "responseEnglish": "Acknowledgement",
+          "note": ""
+        },
+        {
+          "id": "g2",
+          "hausa": "Yauwa",
+          "english": "Response to “Sannu”",
+          "response": "",
+          "responseEnglish": "",
+          "note": "Acknowledge the greeting."
+        },
+        {
+          "id": "g3",
+          "hausa": "Ina kwana? / Barka da safiya",
+          "english": "Good morning",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "The morning is fine",
+          "note": ""
+        },
+        {
+          "id": "g4",
+          "hausa": "Ina yini? / An yini lafiya?",
+          "english": "Good afternoon",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "The afternoon is fine",
+          "note": ""
+        },
+        {
+          "id": "g5",
+          "hausa": "Ina yini? / An yini lafiya?",
+          "english": "Good evening",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "The evening is fine",
+          "note": ""
+        },
+        {
+          "id": "g6",
+          "hausa": "Ya kake? / Ya kike?",
+          "english": "How are you?",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "I am fine",
+          "note": "Practise as an elder addressing a younger person, not as a child addressing an elder."
+        },
+        {
+          "id": "g7",
+          "hausa": "Lafiya / Lafiya lau",
+          "english": "I am fine; the morning, afternoon, or evening is fine",
+          "response": "",
+          "responseEnglish": "",
+          "note": ""
+        },
+        {
+          "id": "g8",
+          "hausa": "Madallah",
+          "english": "Praise be to God",
+          "response": "",
+          "responseEnglish": "",
+          "note": "Closes the supplied example greeting."
+        }
+      ],
+      "steps": [
+        {
+          "id": "greet",
+          "task": "greet someone",
+          "hint": "Sannu",
+          "english": "Well done",
+          "accepted": [
+            "Sannu"
+          ],
+          "replies": [
+            "Yauwa"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "time",
+          "task": "give a time-of-day greeting",
+          "hint": "Ina kwana?",
+          "english": "Good morning",
+          "accepted": [
+            "Ina kwana",
+            "Barka da safiya",
+            "Ina yini",
+            "An yini lafiya"
+          ],
+          "replies": [
+            "Lafiya",
+            "Lafiya lau"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "wellbeing",
+          "task": "ask a younger person how they are",
+          "hint": "Ya kake? / Ya kike?",
+          "english": "How are you?",
+          "accepted": [
+            "Ya kake",
+            "Ya kike"
+          ],
+          "replies": [
+            "Lafiya",
+            "Lafiya lau"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "close",
+          "task": "close the greeting",
+          "hint": "Madallah",
+          "english": "Praise be to God",
+          "accepted": [
+            "Madallah"
+          ],
+          "replies": [
+            "Madallah"
+          ],
+          "matcher": "exact"
+        }
+      ],
+      "mode": "guided"
+    },
+    {
+      "id": "introductions",
+      "title": "Introductions",
+      "description": "Say your name and ask about the other person.",
+      "scenario": "Meet your practice partner, Musa. The tutor asks your name first.",
+      "objective": "Say your name, ask “what about you?”, acknowledge the introduction, and say thanks.",
+      "color": "#D8E5F0",
+      "icon": "◎",
+      "opening": "Ya sunanka?",
+      "cultural_notes": [
+        "This first exercise uses the supplied question “Ya sunanka?”. This is a practice role, not an assumption about the learner’s gender.",
+        "Use “Kai fa?” for a male addressee and “Ke fa?” for a female addressee. Both forms are accepted in practice.",
+        "Replace the name placeholder with your own name. Musa is the tutor’s example name."
+      ],
+      "vocabulary": [
+        {
+          "id": "i1",
+          "hausa": "Ya sunanka?",
+          "english": "What is your name?",
+          "response": "Suna na …",
+          "responseEnglish": "My name is …",
+          "note": ""
+        },
+        {
+          "id": "i2",
+          "hausa": "Suna na …",
+          "english": "My name is …",
+          "response": "Sannu",
+          "responseEnglish": "Well done",
+          "note": "Replace … with your name. “Sunana …” is also accepted."
+        },
+        {
+          "id": "i3",
+          "hausa": "Kai fa? / Ke fa?",
+          "english": "What about you?",
+          "response": "Suna na Musa",
+          "responseEnglish": "My name is Musa",
+          "note": "Kai: male addressee. Ke: female addressee."
+        },
+        {
+          "id": "i4",
+          "hausa": "Sannu",
+          "english": "Well done",
+          "response": "Yauwa",
+          "responseEnglish": "Acknowledgement",
+          "note": ""
+        },
+        {
+          "id": "i5",
+          "hausa": "Na gode",
+          "english": "Thank you",
+          "response": "",
+          "responseEnglish": "",
+          "note": "“Nagode” is also accepted."
+        }
+      ],
+      "steps": [
+        {
+          "id": "name",
+          "task": "introduce yourself",
+          "hint": "Suna na …",
+          "english": "My name is …",
+          "accepted": [
+            "Suna na",
+            "Sunana"
+          ],
+          "replies": [
+            "Sannu"
+          ],
+          "matcher": "name"
+        },
+        {
+          "id": "reciprocal",
+          "task": "ask about the other person",
+          "hint": "Kai fa? / Ke fa?",
+          "english": "What about you?",
+          "accepted": [
+            "Kai fa",
+            "Ke fa",
+            "Ya sunanka"
+          ],
+          "replies": [
+            "Suna na Musa",
+            "Sunana Musa"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "acknowledge",
+          "task": "acknowledge the introduction",
+          "hint": "Sannu",
+          "english": "Well done",
+          "accepted": [
+            "Sannu"
+          ],
+          "replies": [
+            "Yauwa"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "thanks",
+          "task": "thank your practice partner",
+          "hint": "Na gode",
+          "english": "Thank you",
+          "accepted": [
+            "Na gode",
+            "Nagode"
+          ],
+          "replies": [
+            "Na gode"
+          ],
+          "matcher": "exact"
+        }
+      ],
+      "mode": "guided"
+    },
+    {
+      "id": "buying-things",
+      "title": "Buying Things",
+      "description": "Point to an item, ask its price, and buy it.",
+      "scenario": "You are the buyer. Point to an item at a small shop; in this exercise it costs ₦200.",
+      "objective": "Greet the seller, ask the price, request the item, and say thanks.",
+      "color": "#F7D7BF",
+      "icon": "◈",
+      "opening": "You are the buyer. Greet the seller with “Sannu”.",
+      "cultural_notes": [
+        "“Nawa ne wannan?” can refer to any item you point to.",
+        "Either person may say “Na gode” at the end: the seller thanks the buyer for buying, and the buyer thanks the seller for providing the item.",
+        "Price examples are ₦100, ₦200, and ₦500. This first exercise keeps the price fixed at ₦200."
+      ],
+      "vocabulary": [
+        {
+          "id": "b1",
+          "hausa": "Sannu",
+          "english": "Well done",
+          "response": "Yauwa",
+          "responseEnglish": "Acknowledgement",
+          "note": ""
+        },
+        {
+          "id": "b2",
+          "hausa": "Nawa ne wannan?",
+          "english": "How much is this?",
+          "response": "₦200",
+          "responseEnglish": "200 naira",
+          "note": "Point to any item. “Nawane wannan” is also accepted."
+        },
+        {
+          "id": "b3",
+          "hausa": "₦100 / ₦200 / ₦500",
+          "english": "Example prices",
+          "response": "",
+          "responseEnglish": "",
+          "note": "The seller answers with a price. The practice item costs ₦200."
+        },
+        {
+          "id": "b4",
+          "hausa": "A ba ni",
+          "english": "Give me",
+          "response": "Na gode",
+          "responseEnglish": "Thank you",
+          "note": "“A bani” is also accepted. Point to the item you want."
+        },
+        {
+          "id": "b5",
+          "hausa": "Na gode",
+          "english": "Thank you",
+          "response": "Na gode",
+          "responseEnglish": "Thank you",
+          "note": "Either the buyer or the seller can say this at the end. “Nagode” is accepted."
+        }
+      ],
+      "steps": [
+        {
+          "id": "greet",
+          "task": "greet the seller",
+          "hint": "Sannu",
+          "english": "Well done",
+          "accepted": [
+            "Sannu"
+          ],
+          "replies": [
+            "Yauwa"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "price",
+          "task": "ask its price",
+          "hint": "Nawa ne wannan?",
+          "english": "How much is this?",
+          "accepted": [
+            "Nawa ne wannan",
+            "Nawane wannan"
+          ],
+          "replies": [
+            "₦200"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "request",
+          "task": "request the item",
+          "hint": "A ba ni",
+          "english": "Give me",
+          "accepted": [
+            "A ba ni",
+            "A bani"
+          ],
+          "replies": [
+            "Na gode"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "thanks",
+          "task": "thank the seller",
+          "hint": "Na gode",
+          "english": "Thank you",
+          "accepted": [
+            "Na gode",
+            "Nagode"
+          ],
+          "replies": [
+            "Na gode"
+          ],
+          "matcher": "exact"
+        }
+      ],
+      "mode": "guided"
+    },
+    {
+      "id": "general-practice",
+      "title": "Put it all together",
+      "mode": "mixed",
+      "description": "Greet, introduce yourself, and buy something in one conversation.",
+      "scenario": "You are an elder meeting a younger shopkeeper, Musa. The item you point to costs ₦200.",
+      "objective": "Use what you learned in all three lessons. Change the order, repeat phrases, and ask for a hint whenever you need one.",
+      "color": "#E8DFF1",
+      "icon": "✦",
+      "opening": "Sannu",
+      "cultural_notes": [
+        "In this lesson, “Ya kake?” / “Ya kike?” is used by an elder addressing a younger person. Do not use it to address an elder.",
+        "Either person may say “Na gode” at the end: the seller thanks the buyer for buying, and the buyer thanks the seller for providing the item.",
+        "Try this after the three beginner lessons. Hints are optional; each skill counts once even if you repeat it.",
+        "Minor spelling differences and natural “toh” additions are accepted. The original transcript is kept."
+      ],
+      "vocabulary": [
+        {
+          "id": "g1",
+          "hausa": "Sannu",
+          "english": "Well done",
+          "response": "Yauwa",
+          "responseEnglish": "Acknowledgement",
+          "note": ""
+        },
+        {
+          "id": "g2",
+          "hausa": "Yauwa",
+          "english": "Response to “Sannu”",
+          "response": "",
+          "responseEnglish": "",
+          "note": "Acknowledge the greeting."
+        },
+        {
+          "id": "g3",
+          "hausa": "Ina kwana? / Barka da safiya",
+          "english": "Good morning",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "The morning is fine",
+          "note": ""
+        },
+        {
+          "id": "g4",
+          "hausa": "Ina yini? / An yini lafiya?",
+          "english": "Good afternoon",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "The afternoon is fine",
+          "note": ""
+        },
+        {
+          "id": "g5",
+          "hausa": "Ina yini? / An yini lafiya?",
+          "english": "Good evening",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "The evening is fine",
+          "note": ""
+        },
+        {
+          "id": "g6",
+          "hausa": "Ya kake? / Ya kike?",
+          "english": "How are you?",
+          "response": "Lafiya / Lafiya lau",
+          "responseEnglish": "I am fine",
+          "note": "Practise as an elder addressing a younger person, not as a child addressing an elder."
+        },
+        {
+          "id": "g7",
+          "hausa": "Lafiya / Lafiya lau",
+          "english": "I am fine; the morning, afternoon, or evening is fine",
+          "response": "",
+          "responseEnglish": "",
+          "note": ""
+        },
+        {
+          "id": "g8",
+          "hausa": "Madallah",
+          "english": "Praise be to God",
+          "response": "",
+          "responseEnglish": "",
+          "note": "Closes the supplied example greeting."
+        },
+        {
+          "id": "i1",
+          "hausa": "Ya sunanka?",
+          "english": "What is your name?",
+          "response": "Suna na …",
+          "responseEnglish": "My name is …",
+          "note": ""
+        },
+        {
+          "id": "i2",
+          "hausa": "Suna na …",
+          "english": "My name is …",
+          "response": "Sannu",
+          "responseEnglish": "Well done",
+          "note": "Replace … with your name. “Sunana …” is also accepted."
+        },
+        {
+          "id": "i3",
+          "hausa": "Kai fa? / Ke fa?",
+          "english": "What about you?",
+          "response": "Suna na Musa",
+          "responseEnglish": "My name is Musa",
+          "note": "Kai: male addressee. Ke: female addressee."
+        },
+        {
+          "id": "i4",
+          "hausa": "Sannu",
+          "english": "Well done",
+          "response": "Yauwa",
+          "responseEnglish": "Acknowledgement",
+          "note": ""
+        },
+        {
+          "id": "i5",
+          "hausa": "Na gode",
+          "english": "Thank you",
+          "response": "",
+          "responseEnglish": "",
+          "note": "“Nagode” is also accepted."
+        },
+        {
+          "id": "b1",
+          "hausa": "Sannu",
+          "english": "Well done",
+          "response": "Yauwa",
+          "responseEnglish": "Acknowledgement",
+          "note": ""
+        },
+        {
+          "id": "b2",
+          "hausa": "Nawa ne wannan?",
+          "english": "How much is this?",
+          "response": "₦200",
+          "responseEnglish": "200 naira",
+          "note": "Point to any item. “Nawane wannan” is also accepted."
+        },
+        {
+          "id": "b3",
+          "hausa": "₦100 / ₦200 / ₦500",
+          "english": "Example prices",
+          "response": "",
+          "responseEnglish": "",
+          "note": "The seller answers with a price. The practice item costs ₦200."
+        },
+        {
+          "id": "b4",
+          "hausa": "A ba ni",
+          "english": "Give me",
+          "response": "Na gode",
+          "responseEnglish": "Thank you",
+          "note": "“A bani” is also accepted. Point to the item you want."
+        },
+        {
+          "id": "b5",
+          "hausa": "Na gode",
+          "english": "Thank you",
+          "response": "Na gode",
+          "responseEnglish": "Thank you",
+          "note": "Either the buyer or the seller can say this at the end. “Nagode” is accepted."
+        }
+      ],
+      "steps": [
+        {
+          "id": "greet",
+          "task": "greet someone",
+          "hint": "Sannu",
+          "english": "Well done",
+          "accepted": [
+            "Sannu"
+          ],
+          "replies": [
+            "Yauwa"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "time",
+          "task": "give a time-of-day greeting",
+          "hint": "Ina kwana?",
+          "english": "Good morning",
+          "accepted": [
+            "Ina kwana",
+            "Barka da safiya",
+            "Ina yini",
+            "An yini lafiya"
+          ],
+          "replies": [
+            "Lafiya",
+            "Lafiya lau"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "wellbeing",
+          "task": "ask a younger person how they are",
+          "hint": "Ya kake? / Ya kike?",
+          "english": "How are you?",
+          "accepted": [
+            "Ya kake",
+            "Ya kike"
+          ],
+          "replies": [
+            "Lafiya",
+            "Lafiya lau"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "name",
+          "task": "introduce yourself",
+          "hint": "Suna na …",
+          "english": "My name is …",
+          "accepted": [
+            "Suna na",
+            "Sunana"
+          ],
+          "replies": [
+            "Sannu"
+          ],
+          "matcher": "name"
+        },
+        {
+          "id": "ask-name",
+          "task": "ask about the other person",
+          "hint": "Kai fa? / Ke fa?",
+          "english": "What about you?",
+          "accepted": [
+            "Kai fa",
+            "Ke fa",
+            "Ya sunanka"
+          ],
+          "replies": [
+            "Suna na Musa. Kai fa?",
+            "Suna na Musa. Ke fa?"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "price",
+          "task": "ask its price",
+          "hint": "Nawa ne wannan?",
+          "english": "How much is this?",
+          "accepted": [
+            "Nawa ne wannan",
+            "Nawane wannan"
+          ],
+          "replies": [
+            "₦200"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "request",
+          "task": "request the item",
+          "hint": "A ba ni",
+          "english": "Give me",
+          "accepted": [
+            "A ba ni",
+            "A bani"
+          ],
+          "replies": [
+            "Na gode"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "thanks",
+          "task": "thank the seller",
+          "hint": "Na gode",
+          "english": "Thank you",
+          "accepted": [
+            "Na gode",
+            "Nagode"
+          ],
+          "replies": [
+            "Na gode"
+          ],
+          "matcher": "exact"
+        },
+        {
+          "id": "acknowledge",
+          "task": "acknowledge a greeting",
+          "hint": "Yauwa",
+          "english": "Acknowledgement",
+          "accepted": [
+            "Yauwa"
+          ],
+          "replies": [
+            "Ina kwana?"
+          ],
+          "matcher": "exact",
+          "required": false
+        },
+        {
+          "id": "respond",
+          "task": "respond to a greeting",
+          "hint": "Lafiya lau",
+          "english": "I am fine",
+          "accepted": [
+            "Lafiya",
+            "Lafiya lau"
+          ],
+          "replies": [
+            "Madallah"
+          ],
+          "matcher": "exact",
+          "required": false
+        },
+        {
+          "id": "close-greeting",
+          "task": "close a greeting",
+          "hint": "Madallah",
+          "english": "Praise be to God",
+          "accepted": [
+            "Madallah"
+          ],
+          "replies": [
+            "Madallah"
+          ],
+          "matcher": "exact",
+          "required": false
+        },
+        {
+          "id": "price-check",
+          "task": "confirm the price",
+          "hint": "₦200",
+          "english": "200 naira",
+          "accepted": [
+            "₦200",
+            "200"
+          ],
+          "replies": [
+            "₦200"
+          ],
+          "matcher": "exact",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "recognition": {
+    "fillers": [
+      "toh",
+      "to"
+    ],
+    "aliases": {
+      "Sannu": [
+        "saanu",
+        "sanu"
+      ],
+      "Madallah": [
+        "madala",
+        "madalla",
+        "madalah"
+      ],
+      "Lafiya lau": [
+        "lafiya law"
+      ],
+      "A ba ni": [
+        "bani",
+        "ba ni"
+      ]
+    },
+    "note": "Transcript tolerance only; this does not assess pronunciation or tone."
+  }
+}

@@ -1,8 +1,16 @@
 from typing import Literal
 from pydantic import BaseModel, Field
 
+class LessonProgress(BaseModel):
+    completed_steps: int
+    total_steps: int
+    complete: bool
+    instruction: str
+    hint: str
+    hint_english: str
+
 class StartRequest(BaseModel):
-    topic: Literal['greetings', 'buying-things']
+    topic: Literal['greetings', 'introductions', 'buying-things', 'general-practice']
     consent: bool = False
     participant_id: str | None = Field(default=None, max_length=80)
 class StartResponse(BaseModel):
@@ -10,6 +18,7 @@ class StartResponse(BaseModel):
     access_token: str
     provider_mode: Literal['real']
     initial_tutor_message: str
+    lesson_progress: LessonProgress
 class TurnRequest(BaseModel):
     turn_id: str = Field(min_length=1, max_length=80, pattern=r'^[A-Za-z0-9_-]+$')
     text: str = Field(min_length=1, max_length=500)
@@ -18,6 +27,7 @@ class TurnResponse(BaseModel):
     tutor_response: str
     processing_ms: int
     provider_mode: Literal['real']
+    lesson_progress: LessonProgress
 class TranscriptionResponse(BaseModel):
     turn_id: str
     transcript: str
@@ -46,13 +56,16 @@ class ReadyResponse(BaseModel):
     provider_mode: Literal['real']
     model_version: str
 class LessonMetadata(BaseModel):
-    id: Literal['greetings','buying-things']
+    id: Literal['greetings','introductions','buying-things','general-practice']
+    mode: Literal['guided', 'mixed']
     title: str
     description: str
     scenario: str
     tasks: list[str]
     phrases: list[str]
     opening: str
+    cultural_notes: list[str]
+    vocabulary: list[dict]
 class LessonsResponse(BaseModel):
     version: str
     language_review: Literal['pending']

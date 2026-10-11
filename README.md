@@ -1,6 +1,6 @@
 # Parrot backend
 
-FastAPI text practice API for the Hausa app. Lesson content is versioned in `app/lessons.py` and awaiting language review.
+FastAPI practice API for the Hausa app. The three guided beginner lessons—greetings, introductions, and buying things—and the combined “Put it all together” practice are defined in `app/lesson_plans.json` and awaiting language review. See [LESSON_PLANS.md](LESSON_PLANS.md) for roles, steps, reply constraints, and the editing workflow.
 
 ## Local setup
 
@@ -17,15 +17,17 @@ ollama serve                       # if not already running
 
 Never use `--reload` or multiple workers with a local inference process. Ollama loads the quantized model on demand. `PARROT_DB` chooses the SQLite path. Do not commit `.env`, tokens or database files. If the original gated model is needed, accept its conditions at https://huggingface.co/NCAIR1/N-ATLaS and authenticate with `hf auth login`; the chosen community GGUF may not require that grant. No token is printed or stored by this app.
 
-`GET /health` checks liveness without loading weights. `GET /ready` checks whether Ollama has the configured model. `GET /lessons` returns the two draft lessons. OpenAPI is at `/docs`.
+`GET /health` checks liveness without loading weights. `GET /ready` checks whether Ollama has the configured model. `GET /lessons` returns three draft lessons and the combined practice. OpenAPI is at `/docs`.
 
 ```
 curl http://localhost:8000/health
 curl -X POST http://localhost:8000/sessions -H 'Content-Type: application/json' -d '{"topic":"greetings","consent":false}'
 # Use session_id and access_token from the response:
-curl -X POST http://localhost:8000/sessions/SESSION_ID/turns -H 'Authorization: Bearer ACCESS_TOKEN' -H 'Content-Type: application/json' -d '{"turn_id":"turn-1","text":"Sannu! Sunana Amina."}'
+curl -X POST http://localhost:8000/sessions/SESSION_ID/turns -H 'Authorization: Bearer ACCESS_TOKEN' -H 'Content-Type: application/json' -d '{"turn_id":"turn-1","text":"Sannu"}'
 curl -X POST http://localhost:8000/sessions/SESSION_ID/finish -H 'Authorization: Bearer ACCESS_TOKEN'
 ```
+
+Start and turn responses include `lesson_progress`: completed and total steps, completion status, the current task, and its Hausa/English hint. Unrecognized or off-step input returns 422 with `lesson_step_expected`; it does not advance the lesson. Combined practice (`general-practice`) accepts taught phrases in any order, counts each required skill once, and tolerates the documented ASR variants and fillers. Start a new session after a lesson-version update.
 
 A start response contains `session_id`, opaque `access_token`, `provider_mode`, and `initial_tutor_message`. A turn response contains `turn_id`, `tutor_response`, `processing_ms`, and `provider_mode`. Finish returns structured feedback or insufficient evidence. The token is required on both turn and finish calls. Retries must reuse the same turn ID and text. A different text with the same ID returns 409. A failed generation records an error without a successful reply and can be retried. HTTP timeouts may not stop generation already running in Ollama.
 
@@ -55,7 +57,11 @@ For real user validation, ask each participant for a pseudonymous tester code su
 
 For a physical Expo device on the same Wi-Fi, start this server with `--host 0.0.0.0` and set `EXPO_PUBLIC_API_URL=http://YOUR_MAC_LAN_IP:8000` in the mobile project. `localhost` on the phone means the phone itself. Keep this development server on a trusted network only.
 
-## Verified local result (7 October 2026)
+## Guided lesson verification (11 October 2026)
+
+All three guided lessons completed through FastAPI against the local N-ATLaS Ollama model: 12 constrained replies, with the market price held at ₦200. The first turn took about 7.1 seconds; subsequent turns took about 1.4–1.8 seconds. Market feedback reported the four demonstrated tasks. These were developer checks using a temporary database and consent=false, not real-user validation interactions. The current `real_smoke_api.py` follows the guided greeting sequence.
+
+## Verified local result (7 October 2026, earlier curriculum)
 
 The installed runtime was Ollama client 0.34.0 with `hf.co/QuantFactory/N-ATLaS-GGUF:Q4_K_M` (local Ollama ID `a7f2987f42c0`, 4.9 GB). The [quantization card](https://huggingface.co/QuantFactory/N-ATLaS-GGUF) identifies [aashish1904/N-ATLaS-GGUF](https://huggingface.co/aashish1904/N-ATLaS-GGUF), whose card identifies [NCAIR1/N-ATLaS](https://huggingface.co/NCAIR1/N-ATLaS). Repository revisions observed during this run: QuantFactory `fdc9567e20a63e8d27736d640cabe61e937befa8`, intermediate `fdc9567e20a63e8d27736d640cabe61e937befa8`, original `e294476928aca9030e924ca27bb8e085e8581273`. The conversion card does not attest the exact upstream source commit used. Pin and verify conversion provenance before production use.
 

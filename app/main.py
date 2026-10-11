@@ -7,7 +7,8 @@ import uuid
 
 from fastapi import FastAPI, Header, HTTPException, Request
 
-from .lessons import LESSONS, LESSON_VERSION, tutor_prompt
+from .lessons import (LESSONS, LESSON_VERSION, tutor_prompt, accepts, completed_steps,
+                      progress, reply_schema, validated_reply, matching_step)
 from .provider import make_provider
 from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
 from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
@@ -30,6 +31,8 @@ def session_for(sid: str, authorization: str | None):
         raise HTTPException(404, detail={'code': 'session_not_found', 'message': 'Session not found or access denied'})
     if row['provider_mode'] != provider.mode:
         raise HTTPException(503, detail={'code': 'provider_changed', 'message': 'Session provider is unavailable'})
+    if row['lesson_version'] != LESSON_VERSION:
+        raise HTTPException(409, detail={'code': 'lesson_updated', 'message': 'This lesson has been updated. Start a new practice session.'})
     return row
 
 
@@ -77,7 +80,8 @@ def start(body: StartRequest):
                     provider.mode, provider.version, int(body.consent), body.participant_id,
                     'active', now(), None, None))
     return StartResponse(session_id=sid, access_token=token, provider_mode=provider.mode,
-                         initial_tutor_message=LESSONS[body.topic]['opening'])
+                         initial_tutor_message=LESSONS[body.topic]['opening'],
+                         lesson_progress=progress(body.topic))
 
 
 @app.post('/sessions/{session_id}/turns', response_model=TurnResponse)
@@ -97,14 +101,28 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
                                (session_id, body.turn_id)).fetchone()
             if voice and voice['transcript'] != body.text:
                 raise HTTPException(409, detail={'code': 'transcript_mismatch', 'message': 'This voice turn must use its ASR transcript'})
+            rows = store.turns(db, session_id)
             if prior:
                 if prior['learner_text'] != body.text:
                     raise HTTPException(409, detail={'code': 'turn_id_conflict', 'message': 'Turn ID was used with different text'})
                 if prior['tutor_text']:
+                    # A retry returns the original step state even after later turns.
+                    prior_index = next(i for i, row in enumerate(rows) if row['turn_id'] == body.turn_id)
                     return TurnResponse(turn_id=body.turn_id, tutor_response=prior['tutor_text'],
-                                        processing_ms=prior['processing_ms'], provider_mode=provider.mode)
-            rows = store.turns(db, session_id)
-            messages = [{'role': 'system', 'content': tutor_prompt(session['topic'])},
+                                        processing_ms=prior['processing_ms'], provider_mode=provider.mode,
+                                        lesson_progress=progress(session['topic'], rows[:prior_index + 1]))
+            state = progress(session['topic'], rows)
+            if state['complete']:
+                raise HTTPException(409, detail={'code': 'lesson_complete', 'message': 'You have completed the lesson steps. Tap Finish for your practice notes.'})
+            match = matching_step(session['topic'], rows, body.text)
+            if match is None:
+                instruction = ('Use a phrase from greetings, introductions, or buying things'
+                               if LESSONS[session['topic']]['mode'] == 'mixed' else state['instruction'])
+                raise HTTPException(422, detail={'code': 'lesson_step_expected',
+                    'message': f"{instruction}. You can try “{state['hint']}” ({state['hint_english']}).",
+                    'lesson_progress': state})
+            step_index, step = match
+            messages = [{'role': 'system', 'content': tutor_prompt(session['topic'], step_index)},
                         {'role': 'assistant', 'content': LESSONS[session['topic']]['opening']}]
             for row in rows[-6:]:
                 if row['tutor_text']:
@@ -113,9 +131,15 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
             messages.append({'role': 'user', 'content': body.text})
         begun = time.monotonic()
         try:
-            reply = await generate_bounded(messages, 80)
-            if not reply:
-                raise ValueError('Empty model response')
+            for attempt in range(2):
+                raw = await generate_bounded(messages, 80, reply_schema(step))
+                try:
+                    reply = validated_reply(raw, step)
+                    break
+                except (ValueError, TypeError):
+                    if attempt:
+                        raise
+                    messages[0]['content'] += ' Your previous output was invalid. Follow the exact reply choices and JSON schema.'
         except HTTPException:
             raise
         except Exception as exc:
@@ -127,8 +151,9 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
         with store.connect() as db:
             db.execute('INSERT OR REPLACE INTO turns VALUES (?,?,?,?,?,?,?)',
                        (session_id, body.turn_id, body.text, reply, ms, None, now()))
+            state = progress(session['topic'], store.turns(db, session_id))
         return TurnResponse(turn_id=body.turn_id, tutor_response=reply,
-                            processing_ms=ms, provider_mode=provider.mode)
+                            processing_ms=ms, provider_mode=provider.mode, lesson_progress=state)
 
 
 @app.post('/sessions/{session_id}/finish', response_model=FinishResponse)
@@ -150,7 +175,7 @@ async def finish(session_id: str, authorization: str | None = Header(default=Non
         else:
             transcript = '\n'.join(f"Learner: {r['learner_text']}\nTutor: {r['tutor_text']}" for r in turns)
             prompt = [
-                {'role': 'system', 'content': 'Return concise JSON feedback. At most 2 items per list and at most 1 correction. Keep each explanation under 12 words. Use only exact lesson task strings. Expressions and correction originals must be verbatim learner text. If no actual error, corrections must be empty. No scores or pronunciation claims.'},
+                {'role': 'system', 'content': 'Return concise JSON feedback. At most 2 items per list and at most 1 correction. Keep each explanation under 12 words. Use only exact lesson task strings. Expressions and correction originals must be verbatim learner text. Accept understood ASR spelling variants and toh fillers; never correct these. If no actual error, corrections must be empty. No scores or pronunciation claims.'},
                 {'role': 'user', 'content': f"Lesson tasks: {LESSONS[session['topic']]['tasks']}\nTranscript:\n{transcript}"},
             ]
             feedback = None
@@ -166,25 +191,15 @@ async def finish(session_id: str, authorization: str | None = Header(default=Non
             if feedback is None:
                 raise HTTPException(503, detail={'code': 'feedback_invalid', 'message': 'Could not validate feedback; retry finish'})
             learner_text = '\n'.join(r['learner_text'] for r in turns).casefold()
-            evidence_markers = ({
-                'greet someone': ('sannu', 'assalamu'),
-                'respond to a greeting': ('lafiya', 'alhamdulillahi'),
-                'introduce yourself': ('sunana',),
-            } if session['topic'] == 'greetings' else {
-                'greet the seller': ('sannu', 'assalamu'),
-                'ask for an item': ('ina son', 'a ba ni'),
-                'ask its price': ('nawa',),
-                'respond to the price': ('na gode', 'zan saya'),
-            })
-            allowed_tasks = {task for task, markers in evidence_markers.items()
-                             if any(marker in learner_text for marker in markers)}
+            allowed_tasks = [step['task'] for step in completed_steps(session['topic'], turns)]
             allowed_phrases = set(LESSONS[session['topic']]['phrases'])
             feedback = Feedback(
                 insufficient_evidence=False,
-                tasks_completed=[t for t in feedback.tasks_completed if t in allowed_tasks][:2],
+                tasks_completed=allowed_tasks,
                 expressions_used=[e for e in feedback.expressions_used if e and e.casefold() in learner_text][:2],
                 corrections=[c for c in feedback.corrections if c.original and c.original.casefold() in learner_text
-                             and c.original.casefold() != c.suggested.casefold() and c.suggested in allowed_phrases][:1],
+                             and c.original.casefold() != c.suggested.casefold() and c.suggested in allowed_phrases
+                             and not any(accepts(step, c.original) for step in LESSONS[session['topic']]['steps'])][:1],
                 phrases_to_review=[p for p in feedback.phrases_to_review if p in allowed_phrases][:2],
                 message='Feedback based on this text conversation. No pronunciation assessment was made.',
             )
