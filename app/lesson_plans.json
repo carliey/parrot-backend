@@ -89,12 +89,8 @@
           "task": "greet someone",
           "hint": "Sannu",
           "english": "Well done",
-          "accepted": [
-            "Sannu"
-          ],
-          "replies": [
-            "Yauwa"
-          ],
+          "accepted": ["Sannu"],
+          "replies": ["Yauwa"],
           "matcher": "exact"
         },
         {
@@ -108,10 +104,7 @@
             "Ina yini",
             "An yini lafiya"
           ],
-          "replies": [
-            "Lafiya",
-            "Lafiya lau"
-          ],
+          "replies": ["Lafiya", "Lafiya lau"],
           "matcher": "exact"
         },
         {
@@ -119,14 +112,8 @@
           "task": "ask a younger person how they are",
           "hint": "Ya kake? / Ya kike?",
           "english": "How are you?",
-          "accepted": [
-            "Ya kake",
-            "Ya kike"
-          ],
-          "replies": [
-            "Lafiya",
-            "Lafiya lau"
-          ],
+          "accepted": ["Ya kake", "Ya kike"],
+          "replies": ["Lafiya", "Lafiya lau"],
           "matcher": "exact"
         },
         {
@@ -134,12 +121,8 @@
           "task": "close the greeting",
           "hint": "Madallah",
           "english": "Praise be to God",
-          "accepted": [
-            "Madallah"
-          ],
-          "replies": [
-            "Madallah"
-          ],
+          "accepted": ["Madallah"],
+          "replies": ["Madallah"],
           "matcher": "exact"
         }
       ],
@@ -207,13 +190,8 @@
           "task": "introduce yourself",
           "hint": "Suna na …",
           "english": "My name is …",
-          "accepted": [
-            "Suna na",
-            "Sunana"
-          ],
-          "replies": [
-            "Sannu"
-          ],
+          "accepted": ["Suna na", "Sunana"],
+          "replies": ["Sannu"],
           "matcher": "name"
         },
         {
@@ -221,15 +199,8 @@
           "task": "ask about the other person",
           "hint": "Kai fa? / Ke fa?",
           "english": "What about you?",
-          "accepted": [
-            "Kai fa",
-            "Ke fa",
-            "Ya sunanka"
-          ],
-          "replies": [
-            "Suna na Musa",
-            "Sunana Musa"
-          ],
+          "accepted": ["Kai fa", "Ke fa", "Ya sunanka"],
+          "replies": ["Suna na Musa", "Sunana Musa"],
           "matcher": "exact"
         },
         {
@@ -237,12 +208,8 @@
           "task": "acknowledge the introduction",
           "hint": "Sannu",
           "english": "Well done",
-          "accepted": [
-            "Sannu"
-          ],
-          "replies": [
-            "Yauwa"
-          ],
+          "accepted": ["Sannu"],
+          "replies": ["Yauwa"],
           "matcher": "exact"
         },
         {
@@ -250,13 +217,8 @@
           "task": "thank your practice partner",
           "hint": "Na gode",
           "english": "Thank you",
-          "accepted": [
-            "Na gode",
-            "Nagode"
-          ],
-          "replies": [
-            "Na gode"
-          ],
+          "accepted": ["Na gode", "Nagode"],
+          "replies": ["Na gode"],
           "matcher": "exact"
         }
       ],
@@ -324,12 +286,8 @@
           "task": "greet the seller",
           "hint": "Sannu",
           "english": "Well done",
-          "accepted": [
-            "Sannu"
-          ],
-          "replies": [
-            "Yauwa"
-          ],
+          "accepted": ["Sannu"],
+          "replies": ["Yauwa"],
           "matcher": "exact"
         },
         {
@@ -337,13 +295,8 @@
           "task": "ask its price",
           "hint": "Nawa ne wannan?",
           "english": "How much is this?",
-          "accepted": [
-            "Nawa ne wannan",
-            "Nawane wannan"
-          ],
-          "replies": [
-            "₦200"
-          ],
+          "accepted": ["Nawa ne wannan", "Nawane wannan"],
+          "replies": ["₦200"],
           "matcher": "exact"
         },
         {
@@ -351,13 +304,8 @@
           "task": "request the item",
           "hint": "A ba ni",
           "english": "Give me",
-          "accepted": [
-            "A ba ni",
-            "A bani"
-          ],
-          "replies": [
-            "Na gode"
-          ],
+          "accepted": ["A ba ni", "A bani"],
+          "replies": ["Na gode"],
           "matcher": "exact"
         },
         {
@@ -365,13 +313,8 @@
           "task": "thank the seller",
           "hint": "Na gode",
           "english": "Thank you",
-          "accepted": [
-            "Na gode",
-            "Nagode"
-          ],
-          "replies": [
-            "Na gode"
-          ],
+          "accepted": ["Na gode", "Nagode"],
+          "replies": ["Na gode"],
           "matcher": "exact"
         }
       ],
@@ -545,12 +488,8 @@
           "task": "greet someone",
           "hint": "Sannu",
           "english": "Well done",
-          "accepted": [
-            "Sannu"
-          ],
-          "replies": [
-            "Yauwa"
-          ],
+          "accepted": ["Sannu"],
+          "replies": ["Yauwa"],
           "matcher": "exact"
         },
         {
@@ -564,10 +503,7 @@
             "Ina yini",
             "An yini lafiya"
           ],
-          "replies": [
-            "Lafiya",
-            "Lafiya lau"
-          ],
+          "replies": ["Lafiya", "Lafiya lau"],
           "matcher": "exact"
         },
         {
@@ -575,14 +511,8 @@
           "task": "ask a younger person how they are",
           "hint": "Ya kake? / Ya kike?",
           "english": "How are you?",
-          "accepted": [
-            "Ya kake",
-            "Ya kike"
-          ],
-          "replies": [
-            "Lafiya",
-            "Lafiya lau"
-          ],
+          "accepted": ["Ya kake", "Ya kike"],
+          "replies": ["Lafiya", "Lafiya lau"],
           "matcher": "exact"
         },
         {
@@ -590,13 +520,8 @@
           "task": "introduce yourself",
           "hint": "Suna na …",
           "english": "My name is …",
-          "accepted": [
-            "Suna na",
-            "Sunana"
-          ],
-          "replies": [
-            "Sannu"
-          ],
+          "accepted": ["Suna na", "Sunana"],
+          "replies": ["Sannu"],
           "matcher": "name"
         },
         {
@@ -604,15 +529,8 @@
           "task": "ask about the other person",
           "hint": "Kai fa? / Ke fa?",
           "english": "What about you?",
-          "accepted": [
-            "Kai fa",
-            "Ke fa",
-            "Ya sunanka"
-          ],
-          "replies": [
-            "Suna na Musa. Kai fa?",
-            "Suna na Musa. Ke fa?"
-          ],
+          "accepted": ["Kai fa", "Ke fa", "Ya sunanka"],
+          "replies": ["Suna na Musa. Kai fa?", "Suna na Musa. Ke fa?"],
           "matcher": "exact"
         },
         {
@@ -620,13 +538,8 @@
           "task": "ask its price",
           "hint": "Nawa ne wannan?",
           "english": "How much is this?",
-          "accepted": [
-            "Nawa ne wannan",
-            "Nawane wannan"
-          ],
-          "replies": [
-            "₦200"
-          ],
+          "accepted": ["Nawa ne wannan", "Nawane wannan"],
+          "replies": ["₦200"],
           "matcher": "exact"
         },
         {
@@ -634,13 +547,8 @@
           "task": "request the item",
           "hint": "A ba ni",
           "english": "Give me",
-          "accepted": [
-            "A ba ni",
-            "A bani"
-          ],
-          "replies": [
-            "Na gode"
-          ],
+          "accepted": ["A ba ni", "A bani"],
+          "replies": ["Na gode"],
           "matcher": "exact"
         },
         {
@@ -648,13 +556,8 @@
           "task": "thank the seller",
           "hint": "Na gode",
           "english": "Thank you",
-          "accepted": [
-            "Na gode",
-            "Nagode"
-          ],
-          "replies": [
-            "Na gode"
-          ],
+          "accepted": ["Na gode", "Nagode"],
+          "replies": ["Na gode"],
           "matcher": "exact"
         },
         {
@@ -662,12 +565,8 @@
           "task": "acknowledge a greeting",
           "hint": "Yauwa",
           "english": "Acknowledgement",
-          "accepted": [
-            "Yauwa"
-          ],
-          "replies": [
-            "Ina kwana?"
-          ],
+          "accepted": ["Yauwa"],
+          "replies": ["Ina kwana?"],
           "matcher": "exact",
           "required": false
         },
@@ -676,13 +575,8 @@
           "task": "respond to a greeting",
           "hint": "Lafiya lau",
           "english": "I am fine",
-          "accepted": [
-            "Lafiya",
-            "Lafiya lau"
-          ],
-          "replies": [
-            "Madallah"
-          ],
+          "accepted": ["Lafiya", "Lafiya lau"],
+          "replies": ["Madallah"],
           "matcher": "exact",
           "required": false
         },
@@ -691,12 +585,8 @@
           "task": "close a greeting",
           "hint": "Madallah",
           "english": "Praise be to God",
-          "accepted": [
-            "Madallah"
-          ],
-          "replies": [
-            "Madallah"
-          ],
+          "accepted": ["Madallah"],
+          "replies": ["Madallah"],
           "matcher": "exact",
           "required": false
         },
@@ -705,41 +595,22 @@
           "task": "confirm the price",
           "hint": "₦200",
           "english": "200 naira",
-          "accepted": [
-            "₦200",
-            "200"
-          ],
-          "replies": [
-            "₦200"
-          ],
+          "accepted": ["₦200", "200"],
+          "replies": ["₦200"],
           "matcher": "exact",
           "required": false
         }
       ]
     }
   ],
+
   "recognition": {
-    "fillers": [
-      "toh",
-      "to"
-    ],
+    "fillers": ["toh", "to"],
     "aliases": {
-      "Sannu": [
-        "saanu",
-        "sanu"
-      ],
-      "Madallah": [
-        "madala",
-        "madalla",
-        "madalah"
-      ],
-      "Lafiya lau": [
-        "lafiya law"
-      ],
-      "A ba ni": [
-        "bani",
-        "ba ni"
-      ]
+      "Sannu": ["saanu", "sanu"],
+      "Madallah": ["madala", "madalla", "madalah"],
+      "Lafiya lau": ["lafiya law"],
+      "A ba ni": ["bani", "ba ni"]
     },
     "note": "Transcript tolerance only; this does not assess pronunciation or tone."
   }
