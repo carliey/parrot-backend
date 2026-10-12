@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      PARROT_REMOTE_ONLY: "1"
+      PARROT_PROVIDER: hf_space
+      PARROT_ASR_PROVIDER: hf_space
+      PARROT_DB: /data/parrot.sqlite3
+      PARROT_GENERATION_SPACE: ${PARROT_GENERATION_SPACE:-phaeeza/parrot-ai}
+      PARROT_GENERATION_TIMEOUT_SECONDS: ${PARROT_GENERATION_TIMEOUT_SECONDS:-180}
+      PARROT_ASR_SPACE: ${PARROT_ASR_SPACE:-phaeeza/Hausa-tutor-conversation-voice-first}
+      PARROT_ASR_TIMEOUT_SECONDS: ${PARROT_ASR_TIMEOUT_SECONDS:-90}
+      HF_TOKEN: ${HF_TOKEN:?Set HF_TOKEN in Dokploy Environment}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-cnc9FDcyBlbzxv28zGEM}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-eleven_v4}
+    expose:
+      - "8000"
+    volumes:
+      - parrot-data:/data
+
+volumes:
+  parrot-data:

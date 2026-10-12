@@ -6,35 +6,40 @@ HTTP client libraries, not local inference engines. ffmpeg only converts uploads
 There is no automatic fallback to local inference when a Space is unavailable.
 The image's remote-only startup check rejects local provider settings.
 
-## Steps
+## Docker Compose deployment
 
-1. Push the backend code, Dockerfile and requirements-runtime.txt to your Git
-   repository. Never commit `.env`, keys or `parrot.sqlite3`.
-2. In Dokploy, open/create your project and add an **Application**. Connect the
-   Git repository and select the branch containing these files.
-3. Select the **Dockerfile** build type. If the repository is the backend folder,
-   use Dockerfile path `Dockerfile` and build context `.`. If the repository holds
-   both projects, use path `parrot-backend/Dockerfile` and context `parrot-backend`.
-4. Under **Environment**, copy the contents of `deploy/dokploy.env.example`.
-   Replace HF_TOKEN and ELEVENLABS_API_KEY placeholders with their actual values,
-   and save. These are runtime variables, not build arguments. The existing
-   ElevenLabs library voice requires a paid account for API use.
-5. Under **Advanced → Volumes/Mounts**, add a named **Volume** called
-   `parrot-data`, mounted at `/data`. Save. A new Docker volume inherits the
-   image directory's ownership (UID 10001). An existing/bind-mounted directory
-   must be writable by UID 10001. Keep one replica and one Uvicorn worker.
-6. Under **Domains**, add your backend hostname, target container port **8000**,
-   and enable HTTPS. Point that hostname's DNS at your Dokploy server. You do not
-   need a publicly published raw port 8000 when using Dokploy's domain routing.
-7. Click **Deploy**, then open the deployment and runtime logs. The server should
-   start without downloading model weights. Do not use requirements-speech.txt.
-8. Open `https://YOUR-HOST/health`; expect `{"status":"alive"}`. Open `/ready`;
-   expect `ready: true` and the HF Space model version. Readiness checks model
-   metadata; it does not prove GPU quota or successful generation. Test one real
-   session, recording, reply and feedback before shutting down your old backend.
-9. In `parrot-mobile/.env`, set `EXPO_PUBLIC_API_URL=https://YOUR-HOST` with no
-   trailing slash. Restart Expo and reload the development app. For an installed
-   release APK, rebuild and reinstall it: its API address is bundled at build time.
+1. Push `docker-compose.yml`, `Dockerfile`, `requirements-runtime.txt`, `app/`
+   and the backend scripts to your Git repository. Do not push `.env` or databases.
+2. In your Dokploy project, add a **Docker Compose** service. Choose standard
+   **Docker Compose**, not Stack: this setup builds an image from the Dockerfile.
+3. Connect your Git repository and branch. Set **Compose Path** to
+   `docker-compose.yml` for a backend-only repository, or
+   `parrot-backend/docker-compose.yml` if both projects share the repository.
+   Use the Git source, rather than pasting only YAML into a raw Compose service:
+   the build needs the Dockerfile and application source from that repository.
+4. Open **Environment**. Copy `deploy/dokploy.env.example`, replace the HF_TOKEN
+   and ELEVENLABS_API_KEY placeholders with your actual secrets, and save.
+   Compose explicitly passes these variables to the container. It fixes both
+   model providers to hf_space and the database path to `/data/parrot.sqlite3`.
+5. The Compose file creates and mounts the named volume `parrot-data` at `/data`.
+   Do not add another database service or manually create a duplicate mount.
+   Docker prefixes the volume name with the Compose project name. Keep that
+   project/service identity stable across redeployments to reuse its records.
+6. Under **Domains**, add your backend hostname. Choose service **backend**, port
+   **8000**, path `/`, and enable HTTPS. Point its DNS to your Dokploy server.
+   Dokploy configures routing/network integration. No public host-port mapping
+   is needed in this Compose file. Redeploy after domain changes.
+7. Click **Deploy**. Check build and runtime logs. `/health` should return
+   `{"status":"alive"}` and `/ready` should report the HF generation Space.
+   Readiness is metadata-only; test a real conversation, upload and feedback too.
+8. Set `EXPO_PUBLIC_API_URL=https://YOUR-HOST` in `parrot-mobile/.env`, without a
+   trailing slash. Restart Expo/reload development apps; rebuild and reinstall
+   release APKs to change their bundled address.
+
+No Ollama or GPU service is created. Both Spaces must remain available. Keep one
+backend instance while using SQLite and in-process concurrency controls. Enable
+Dokploy Volume Backups for the named data volume. Never use `docker compose down
+-v` unless you intend to delete the database and cached audio.
 
 ## Data and restarts
 
@@ -65,15 +70,30 @@ Start Ollama and the backend normally. Return PARROT_PROVIDER to hf_space when
 finished. Local ASR is also opt-in using PARROT_ASR_PROVIDER=local and the separate
 requirements-speech.txt; never select it in the deployed container.
 
-## Local Docker check
+## Local Docker Compose check
 
-From parrot-backend:
+From `parrot-backend`, with credentials set in your private `.env`:
 
 ```sh
-docker build -t parrot-backend .
-docker run --rm --name parrot-backend -p 8000:8000 --env-file .env \
-  -e PARROT_REMOTE_ONLY=1 -e PARROT_PROVIDER=hf_space -e PARROT_ASR_PROVIDER=hf_space \
-  -e PARROT_DB=/data/parrot.sqlite3 -v parrot-data:/data parrot-backend
+docker compose -f docker-compose.yml -f compose.local.yml config --quiet
+docker compose -f docker-compose.yml -f compose.local.yml up -d --build
+docker compose logs -f backend
+curl http://localhost:8000/health
 ```
 
-Official reference: https://docs.dokploy.com/docs/core/applications
+The optional local override publishes port 8000 on loopback only. Stop with
+`docker compose -f docker-compose.yml -f compose.local.yml down` (without `-v`).
+These commands use HF Spaces, even if your laptop `.env` selects Ollama for a
+non-Docker development run. To inspect consenting records inside the deployment:
+
+```sh
+docker compose exec -T backend python export_sessions.py
+```
+
+Run deployment-side commands in the actual Compose project directory and with
+Dokploy's project name, or use Dokploy's service terminal. A new server volume
+starts empty; laptop records need a separate migration.
+
+References:
+- https://docs.dokploy.com/docs/core/docker-compose
+- https://docs.dokploy.com/docs/core/docker-compose/domains
