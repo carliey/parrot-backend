@@ -23,12 +23,12 @@ The final acknowledgement is followed by a completion button. Morning, afternoon
 
 ## 2. Introductions
 
-The tutor starts with `Ya sunanka?`. The sample tutor name is Musa. The masculine question is a practice role, not a gender inference about the learner.
+The tutor starts with `Ya sunanka?`. The sample tutor name is Aku. The masculine question is a practice role, not a gender inference about the learner.
 
 | Step | Learner | Tutor may reply |
 | --- | --- | --- |
 | Give a name | Suna na [name] / Sunana [name] | Sannu |
-| Ask in return | Kai fa? / Ke fa? / Ya sunanka? | Suna na Musa / Sunana Musa |
+| Ask in return | Kai fa? / Ke fa? / Ya sunanka? | Suna na Aku / Sunana Aku |
 | Acknowledge | Sannu | Yauwa |
 | Thank | Na gode / Nagode | Na gode |
 
@@ -75,9 +75,9 @@ General practice sends every nonempty utterance to N-ATLaS with recent conversat
 
 The model returns `{reply, status, skills}`. Status is `understood`, `unclear`, or `off_topic`. Replies for understood turns are generated freely within the beginner lesson instructions: at most 20 words, two short sentences, one question, and at most two unfamiliar words. The backend checks those limits, familiar vocabulary (including learner names), numeric prices, and the elder role. This is a vocabulary/shape guard plus model instructions, not a proof that every reply is linguistically correct or relevant. Hausa speaker review remains necessary.
 
-Unclear and off-topic turns use short English support messages selected by the model through their status. They receive no skill credit. These are conversation repair turns, not transcription errors or pronunciation judgements. If generation fails or returns invalid output twice, the request still fails honestly; no successful model reply is invented.
+Unclear and off-topic turns use short English support messages selected by the model through their status. They receive no skill credit. These are conversation repair turns, not transcription errors or pronunciation judgements. For a failed response to a clearly recognised price, name exchange, wellbeing question, or purchase/thanks, the retry may constrain the model to short context-appropriate replies. Normal first-attempt replies remain open within the vocabulary and length limits. If generation fails or returns invalid output twice, the request still fails honestly; no successful model reply is invented.
 
-Skills are independent of reply selection. A model skill claim must contain an exact excerpt from the latest learner text and an allowed skill ID. Fabricated evidence and claims contradicting recognisable phrases are discarded. Familiar whole phrases also retain deterministic recognition; context-dependent `Kai fa?` / `Ke fa?` requires model assessment. More than one skill can count in a turn, each skill counts only once, and replies need not teach the next missing skill. Semantic skill attribution is provisional model feedback, not a verified fluency assessment.
+Skills are independent of reply selection. A model skill claim must contain an exact excerpt from the latest learner text and an allowed skill ID. Fabricated evidence and claims contradicting recognisable phrases are discarded. Familiar whole phrases and combinations of recognised clauses also retain deterministic recognition (including a polite “don Allah” ending and “ba ni wannan”); context-dependent `Kai fa?` / `Ke fa?` requires model assessment. More than one skill can count in a turn, each skill counts only once, and replies need not teach the next missing skill. Semantic skill attribution is provisional model feedback, not a verified fluency assessment.
 
 The additive `turn_assessments` SQLite table stores status and evidence alongside each successful general-practice turn. They are returned by local consenting-session exports and reused for progress, finish feedback, and idempotent retries. Original learner and ASR text remain unchanged. Existing database rows are preserved.
 

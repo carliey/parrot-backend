@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import hashlib
 import json
 import logging
@@ -12,6 +13,7 @@ from .lessons import (LESSONS, LESSON_VERSION, tutor_prompt, accepts, completed_
                       progress, reply_schema, validated_reply, matching_step)
 from .provider import make_provider
 from . import general_practice
+from . import tts
 from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
 from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
 from .store import Store, now
@@ -23,6 +25,44 @@ capacity = asyncio.Semaphore(1)
 waiting = asyncio.Semaphore(2)
 app = FastAPI(title='Parrot Hausa Practice API', version='0.1.0')
 logger = logging.getLogger('uvicorn.error')
+speech_capacity = asyncio.Semaphore(1)
+
+
+@app.post('/sessions/{session_id}/speech/{message_id}')
+async def speech(session_id: str, message_id: str, authorization: str | None = Header(default=None)):
+    session = session_for(session_id, authorization)
+    if session['topic'] != 'general-practice':
+        raise HTTPException(404, detail={'message': 'Audio is available in Putting it together.'})
+    with store.connect() as db:
+        if message_id == 'opening':
+            text = LESSONS[session['topic']]['opening']
+        else:
+            row = db.execute('SELECT tutor_text FROM turns WHERE session_id=? AND turn_id=?',
+                             (session_id, message_id)).fetchone()
+            if not row or not row['tutor_text']:
+                raise HTTPException(404, detail={'message': 'Tutor reply not found.'})
+            text = row['tutor_text']
+    voice, model = tts.settings()
+    try:
+        await asyncio.wait_for(speech_capacity.acquire(), timeout=2)
+    except TimeoutError:
+        raise HTTPException(429, detail={'message': 'Tutor audio is busy. Tap replay shortly.'})
+    try:
+        with store.connect() as db:
+            row = db.execute('SELECT audio FROM speech_audio WHERE session_id=? AND message_id=? AND voice=? AND model=?',
+                             (session_id, message_id, voice, model)).fetchone()
+        audio = row['audio'] if row else None
+        if audio is None:
+            try:
+                audio = await asyncio.to_thread(tts.synthesize, text)
+            except RuntimeError as exc:
+                raise HTTPException(503, detail={'message': str(exc)}) from None
+            with store.connect() as db:
+                db.execute('INSERT OR REPLACE INTO speech_audio VALUES (?,?,?,?,?)',
+                           (session_id, message_id, voice, model, audio))
+        return {'audio_base64': base64.b64encode(audio).decode(), 'mime_type': 'audio/mpeg'}
+    finally:
+        speech_capacity.release()
 
 
 def session_for(sid: str, authorization: str | None):
@@ -256,11 +296,13 @@ async def transcribe(session_id: str, turn_id: str, request: Request,
             raise HTTPException(413, detail={'code': 'audio_too_large', 'message': 'Recording exceeds 5 MB'})
         chunks.append(chunk)
     if size == 0:
+        logger.warning('Transcription rejected: empty_audio (0 uploaded bytes)')
         raise HTTPException(422, detail={'code': 'empty_audio', 'message': 'Recording is empty'})
     begun = time.monotonic()
     try:
         transcript = await asyncio.to_thread(transcribe_audio, b''.join(chunks))
     except ValueError as exc:
+        logger.warning('Transcription rejected: invalid_audio (%d uploaded bytes): %s', size, exc)
         raise HTTPException(422, detail={'code': 'invalid_audio', 'message': str(exc)}) from exc
     except RuntimeError as exc:
         # ASR RuntimeErrors contain safe messages, never remote exception details.
@@ -269,6 +311,8 @@ async def transcribe(session_id: str, turn_id: str, request: Request,
     except Exception as exc:
         raise HTTPException(503, detail={'code': 'asr_unavailable', 'message': f'Hausa ASR failed: {type(exc).__name__}'}) from exc
     if not transcript or len(transcript) > 500:
+        logger.warning('Transcription rejected: no_speech (%d uploaded bytes, %d transcript characters)',
+                       size, len(transcript or ''))
         raise HTTPException(422, detail={'code': 'no_speech', 'message': 'No usable Hausa speech was detected; try again'})
     ms = int((time.monotonic() - begun) * 1000)
     with store.connect() as db:

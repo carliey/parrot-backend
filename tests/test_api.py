@@ -224,7 +224,7 @@ def test_invalid_reply_can_recover_on_constrained_retry(client, monkeypatch):
 
 def test_lesson_metadata_and_old_sessions(client):
     data = client.get('/lessons').json()
-    assert data['version'] == 'practice-4'
+    assert data['version'] == 'practice-5'
     assert {lesson['id'] for lesson in data['lessons']} == {'greetings', 'introductions', 'buying-things', 'general-practice'}
     session, auth = create(client)
     with main.store.connect() as db:

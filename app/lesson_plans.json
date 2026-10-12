@@ -1,5 +1,5 @@
 {
-  "version": "practice-4",
+  "version": "practice-5",
   "language_review": "pending",
   "content_source": "User-supplied vocabulary and cultural guidance, 11 October 2026",
   "lessons": [
@@ -132,7 +132,7 @@
       "id": "introductions",
       "title": "Introductions",
       "description": "Say your name and ask about the other person.",
-      "scenario": "Meet your practice partner, Musa. The tutor asks your name first.",
+      "scenario": "Meet your practice partner, Aku. The tutor asks your name first.",
       "objective": "Say your name, ask “what about you?”, acknowledge the introduction, and say thanks.",
       "color": "#D8E5F0",
       "icon": "◎",
@@ -140,7 +140,7 @@
       "cultural_notes": [
         "This first exercise uses the supplied question “Ya sunanka?”. This is a practice role, not an assumption about the learner’s gender.",
         "Use “Kai fa?” for a male addressee and “Ke fa?” for a female addressee. Both forms are accepted in practice.",
-        "Replace the name placeholder with your own name. Musa is the tutor’s example name."
+        "Replace the name placeholder with your own name. Aku is the tutor’s example name."
       ],
       "vocabulary": [
         {
@@ -163,8 +163,8 @@
           "id": "i3",
           "hausa": "Kai fa? / Ke fa?",
           "english": "What about you?",
-          "response": "Suna na Musa",
-          "responseEnglish": "My name is Musa",
+          "response": "Suna na Aku",
+          "responseEnglish": "My name is Aku",
           "note": "Kai: male addressee. Ke: female addressee."
         },
         {
@@ -200,7 +200,7 @@
           "hint": "Kai fa? / Ke fa?",
           "english": "What about you?",
           "accepted": ["Kai fa", "Ke fa", "Ya sunanka"],
-          "replies": ["Suna na Musa", "Sunana Musa"],
+          "replies": ["Suna na Aku", "Sunana Aku"],
           "matcher": "exact"
         },
         {
@@ -325,7 +325,7 @@
       "title": "Put it all together",
       "mode": "mixed",
       "description": "Greet, introduce yourself, and buy something in one conversation.",
-      "scenario": "You are an elder meeting a younger shopkeeper, Musa. The item you point to costs ₦200.",
+      "scenario": "You are an elder meeting a younger shopkeeper, Aku. The item you point to costs ₦200.",
       "objective": "Chat using what you learned: combine phrases, use your own words, and ask for a hint when needed. Keep practising for as long as you like.",
       "color": "#E8DFF1",
       "icon": "✦",
@@ -421,8 +421,8 @@
           "id": "i3",
           "hausa": "Kai fa? / Ke fa?",
           "english": "What about you?",
-          "response": "Suna na Musa",
-          "responseEnglish": "My name is Musa",
+          "response": "Suna na Aku",
+          "responseEnglish": "My name is Aku",
           "note": "Kai: male addressee. Ke: female addressee."
         },
         {
@@ -530,7 +530,7 @@
           "hint": "Kai fa? / Ke fa?",
           "english": "What about you?",
           "accepted": ["Kai fa", "Ke fa", "Ya sunanka"],
-          "replies": ["Suna na Musa. Kai fa?", "Suna na Musa. Ke fa?"],
+          "replies": ["Suna na Aku. Kai fa?", "Suna na Aku. Ke fa?"],
           "matcher": "exact"
         },
         {

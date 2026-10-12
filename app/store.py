@@ -21,7 +21,11 @@ class Store:
               PRIMARY KEY(session_id,turn_id));
               CREATE TABLE IF NOT EXISTS turn_assessments (
               session_id TEXT NOT NULL, turn_id TEXT NOT NULL, status TEXT NOT NULL,
-              skill_evidence TEXT NOT NULL, PRIMARY KEY(session_id,turn_id));''')
+              skill_evidence TEXT NOT NULL, PRIMARY KEY(session_id,turn_id));
+              CREATE TABLE IF NOT EXISTS speech_audio (
+              session_id TEXT NOT NULL, message_id TEXT NOT NULL, voice TEXT NOT NULL,
+              model TEXT NOT NULL, audio BLOB NOT NULL,
+              PRIMARY KEY(session_id,message_id,voice,model));''')
     @contextmanager
     def connect(self):
         db = sqlite3.connect(self.path, timeout=15)

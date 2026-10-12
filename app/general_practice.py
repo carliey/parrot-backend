@@ -39,11 +39,13 @@ def repair_schema(learner_text, rows):
     if normalize(without_fillers(learner_text)) in {'kaifa', 'kefa'} and reciprocal_topic(learner_text, rows) == 'wellbeing':
         choices = ['Lafiya lau.', 'Lafiya.', 'Toh, lafiya lau.']
     elif re.search(r'\bsuna\s*na\s+\w+', learner_text, re.I) and re.search(r'\b(?:kai|ke)\s+fa\b', learner_text, re.I):
-        choices = ['Suna na Musa.', 'Sannu. Suna na Musa.']
+        choices = ['Suna na Aku.', 'Sannu. Suna na Aku.']
     elif recognised(next(s for s in LESSONS[TOPIC]['steps'] if s['id'] == 'price'), learner_text):
         choices = ['₦200.', '₦200', 'Toh, ₦200.']
     elif intents and intents <= {'request', 'thanks'}:
         choices = ['Na gode.', 'Toh, na gode.']
+    elif intents and 'greet' in intents and intents <= {'greet', 'time', 'wellbeing'}:
+        choices = ['Yauwa. Lafiya lau.', 'Yauwa. Lafiya.'] if len(intents) > 1 else ['Yauwa.', 'Yauwa']
     elif intents and intents <= {'wellbeing', 'time', 'respond'}:
         choices = ['Lafiya lau.', 'Lafiya.']
     if choices:
@@ -92,13 +94,13 @@ def tutor_prompt(learner_text="", rows=()):
     skills = {s['id']: s['task'] for s in lesson['steps'] if s.get('required', True)}
     meaning = [s['task'] for s in lesson['steps'] if s['id'] in known_intents(learner_text, rows)]
     phrases = list(dict.fromkeys(
-        p.strip() for p in lesson['phrases'] + ['Suna na Musa', 'Toh', '₦200']
+        p.strip() for p in lesson['phrases'] + ['Suna na Aku', 'Toh', '₦200']
         if '…' not in p and not re.search(r'₦(?:100|500)|Ya k[ai]ke', p)
     ))
     return (
-        'You are Musa, a younger Hausa shopkeeper talking to an elder learner. '
+        'You are Aku, a younger Hausa shopkeeper talking to an elder learner. '
         'Have a natural beginner conversation about greetings, names and buying the pointed-to item. '
-        'The price is always ₦200. Your name is Musa. Never invent the type of item being pointed to. '
+        'The price is always ₦200. Your name is Aku. Never invent the type of item being pointed to. '
         'Respond only to the latest learner message in context, not a fixed sequence. '
         'Understand combined phrases, paraphrases, minor ASR/spelling errors (saanu, madala, lafiya law), '
         'and toh/to fillers. Never correct these or judge pronunciation. '

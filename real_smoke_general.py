@@ -48,7 +48,7 @@ def run():
                             assert 'suna' not in result.json()['tutor_response'].lower()
                             assert not any(s['skill'] == 'ask-name' for s in last['skill_evidence'])
                         else:
-                            assert 'musa' in result.json()['tutor_response'].lower()
+                            assert 'aku' in result.json()['tutor_response'].lower()
             assert list(main.store.export()) == []
 
 

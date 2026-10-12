@@ -78,3 +78,31 @@ In a later run, the model produced a structurally valid but linguistically poor 
 General practice now accepts combined phrases and paraphrases through N-ATLaS, with short replies and separate evidence-backed skill tracking. It continues after the checklist is complete. Guided lessons retain their ordered, constrained exercises. Restart the backend and start a new session after this update; existing sessions retain their older lesson version. Reload the mobile app (or rebuild an installed APK) to enable continued input after all skills are covered.
 
 Run `.venv312/bin/python real_smoke_general.py` with Ollama running for a real-model check of combined greetings, introductions, a shopping paraphrase, contextual replies, unclear speech, and an off-topic instruction. It uses synthetic text, a temporary database and no export consent, so it does not count toward real-user validation.
+
+Verified on 11 October 2026: 90 backend tests and 9 mobile tests passed. Eight real N-ATLaS text turns passed the general-practice smoke check, including combined expressions, name exchange, a polite price question, purchase plus thanks, contextual reciprocal reply, unclear input and off-topic redirection. Warm turn times were about 1.3–4.1 seconds on this Mac; this is not a hosting latency guarantee. Semantic judgements and Hausa phrasing still need native-speaker review.
+# ElevenLabs voice for Putting it together
+
+The mixed practice chat uses ElevenLabs for every tutor bubble, including the
+opening. Learn-page recordings remain unchanged. Text appears before audio is
+ready; playback starts automatically and each bubble offers Replay. Recording,
+leaving, finishing, and backgrounding stop playback. Audio failure leaves text
+usable and Replay retries speech without regenerating the tutor reply.
+
+Setup:
+1. Open `parrot-backend/.env` (not `.env.example`).
+2. Set `ELEVENLABS_API_KEY` to the actual key from your ElevenLabs account.
+3. Keep `ELEVENLABS_VOICE_ID=cnc9FDcyBlbzxv28zGEM` and
+   `ELEVENLABS_MODEL_ID=eleven_v4`.
+4. Restart the backend with the existing uvicorn command using `--env-file .env`.
+5. Reload the mobile app and start Putting it together. The opening should speak;
+   send a reply, then tap Replay. Try recording during playback to verify it stops.
+
+The key stays on the backend, never in Expo public variables or the HF Space.
+The voice must be available to your ElevenLabs account with API generation access.
+Uses the text-to-dialogue endpoint with one voice and MP3 output. Only stored tutor
+replies can be synthesized through an authenticated session; clients cannot send
+arbitrary text. Generated audio is cached in SQLite `speech_audio`, keyed by session,
+message, voice and model, to avoid repeated generation charges. It persists with
+the database and is excluded from validation exports. Mobile cache files are deleted
+when the chat screen unmounts. Tutor text is sent to ElevenLabs for synthesis.
+Validate Hausa pronunciation on a device before tester rollout.

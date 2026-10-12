@@ -144,13 +144,13 @@ def test_reciprocal_name_skill_requires_name_context():
     raw = response('Lafiya lau', [{'skill': 'ask-name', 'evidence': 'Kai fa?'}])
     _, _, skills = validate_response(raw, 'Kai fa?', [{'learner_text': 'Ya kake?', 'tutor_text': 'Lafiya lau'}])
     assert skills == []
-    _, _, skills = validate_response(response('Suna na Musa'), 'Suna na Amina, kai fa?', [])
+    _, _, skills = validate_response(response('Suna na Aku'), 'Suna na Amina, kai fa?', [])
     assert {s['skill'] for s in skills} == {'name', 'ask-name'}
 
 
 @pytest.mark.parametrize('learner,reply,rows', [
-    ('Kai fa?', 'Suna na Musa', [{'learner_text': 'Ya kake?', 'tutor_text': 'Lafiya lau'}]),
-    ('Suna na Amina, kai fa?', 'Suna na Musa. Kai fa?', []),
+    ('Kai fa?', 'Suna na Aku', [{'learner_text': 'Ya kake?', 'tutor_text': 'Lafiya lau'}]),
+    ('Suna na Amina, kai fa?', 'Suna na Aku. Kai fa?', []),
     ('Nawa ne wannan don Allah?', 'Nawa ne wannan? ₦200', []),
     ('Sannu', 'Yauwa. Yauwa.', []),
 ])
