@@ -118,7 +118,7 @@ def transcribe(audio: bytes) -> str:
     samples = np.frombuffer(result.stdout, dtype='<f4')
     if len(samples) < 1600 or len(samples) > 30 * 16000:
         raise ValueError('Record between 0.1 and 30 seconds of speech')
-    provider = os.getenv('PARROT_ASR_PROVIDER', 'local').strip().lower()
+    provider = os.getenv('PARROT_ASR_PROVIDER', 'hf_space').strip().lower()
     if provider == 'hf_space':
         return _transcribe_space(samples)
     if provider != 'local':

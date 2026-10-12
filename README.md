@@ -2,22 +2,24 @@
 
 FastAPI practice API for the Hausa app. The three guided beginner lessons—greetings, introductions, and buying things—and the combined “Put it all together” practice are defined in `app/lesson_plans.json` and awaiting language review. See [LESSON_PLANS.md](LESSON_PLANS.md) for roles, steps, reply constraints, and the editing workflow.
 
-## Local setup
+## Hosted setup (default)
 
-This Mac reports Apple M1 Pro, arm64 Python, 16 GB unified memory and about 160 GB free disk at inspection. N-ATLaS is a Llama 3 8B derivative. The full 16-bit weights are about 16 GB before runtime overhead, so do not load them here. The selected `QuantFactory/N-ATLaS-GGUF:Q4_K_M` card traces its quantization to `NCAIR1/N-ATLaS`; use Ollama on Metal. This is a community quantization and should be checked against its source revision before release. Direct MLX conversion from the full weights would require holding or staging the full model plus conversion output, so it was not attempted.
+Generation and transcription use the configured HF Spaces. No model is downloaded
+by the backend. For Docker and Dokploy, follow [the deployment guide](deploy/DOKPLOY.md)
+and use [the environment template](deploy/dokploy.env.example).
+
+For laptop testing against the same remote services:
 
 ```
 /opt/homebrew/bin/python3.12 -m venv .venv312
 .venv312/bin/pip install -r requirements.txt
 cp -n .env.example .env            # replace HF_TOKEN in .env before starting
-ollama pull hf.co/QuantFactory/N-ATLaS-GGUF:Q4_K_M
-ollama serve                       # if not already running
 .venv312/bin/uvicorn app.main:app --env-file .env --host 0.0.0.0 --port 8000 --workers 1
 ```
 
 Never use `--reload` or multiple workers with a local inference process. Ollama loads the quantized model on demand. `PARROT_DB` chooses the SQLite path. Do not commit `.env`, tokens or database files. If the original gated model is needed, accept its conditions at https://huggingface.co/NCAIR1/N-ATLaS and authenticate with `hf auth login`; the chosen community GGUF may not require that grant. No token is printed or stored by this app.
 
-`GET /health` checks liveness without loading weights. `GET /ready` checks whether Ollama has the configured model. `GET /lessons` returns three draft lessons and the combined practice. OpenAPI is at `/docs`.
+`GET /health` checks liveness without loading weights. `GET /ready` checks the configured generation provider metadata. `GET /lessons` returns three draft lessons and the combined practice. OpenAPI is at `/docs`.
 
 ```
 curl http://localhost:8000/health
@@ -31,9 +33,9 @@ Start and turn responses include `lesson_progress`: completed and total steps, c
 
 A start response contains `session_id`, opaque `access_token`, `provider_mode`, and `initial_tutor_message`. A turn response contains `turn_id`, `tutor_response`, `processing_ms`, and `provider_mode`. Finish returns structured feedback or insufficient evidence. The token is required on both turn and finish calls. Retries must reuse the same turn ID and text. A different text with the same ID returns 409. A failed generation records an error without a successful reply and can be retried. HTTP timeouts may not stop generation already running in Ollama.
 
-Run tests with `.venv312/bin/pytest -q`. Export consenting real sessions only with `.venv312/bin/python export_sessions.py > real-sessions.jsonl`. Export is a local CLI operation, not an HTTP endpoint. `consent=false` is the default; participant IDs are optional pseudonyms. No raw audio is stored. SQLite storage is for local development and must be replaced or hardened before public deployment. Add TLS, authentication, rate limits, token expiry, data retention policy and privacy review before exposing this server publicly.
+Run tests with `.venv312/bin/pytest -q`. Export consenting real sessions only with `.venv312/bin/python export_sessions.py > real-sessions.jsonl`. Export is a local CLI operation, not an HTTP endpoint. `consent=false` is the default; participant IDs are optional pseudonyms. Uploaded learner recordings are deleted after processing; generated tutor speech is cached in SQLite. Use the documented persistent volume and single-replica deployment. Add TLS, authentication, rate limits, token expiry, data retention policy and privacy review before exposing this server publicly.
 
-Hausa ASR can use the configured Hugging Face Space or the optional local speech runtime described below. TTS is still unavailable (`POST /speech/synthesize` returns 501); the text model does not produce audio.
+Hausa ASR can use the configured Hugging Face Space or the optional local speech runtime described below. Mixed-practice TTS uses ElevenLabs through the authenticated session speech endpoint; guided chats use bundled recordings. The legacy `/speech/synthesize` endpoint is unused.
 
 ## Hausa voice practice and validation
 
@@ -43,9 +45,9 @@ Copy `.env.example` to `.env` and replace `HF_TOKEN=hf_replace_with_your_token` 
 
 `PARROT_ASR_PROVIDER=hf_space` uses `phaeeza/Hausa-tutor-conversation-voice-first` and its `/check_hausa` API. The backend validates the audio with ffmpeg, uploads a temporary 16 kHz mono WAV, and uses only the returned transcription. The Space's hardcoded score and target lesson are ignored. No local Torch/Transformers install or ASR model download is needed for this mode. `ffmpeg` must still be on PATH (on this Mac: `brew install ffmpeg` if missing).
 
-The token authenticates requests to the Space; ZeroGPU quota is associated with the authenticated account. Space errors and quota failures return HTTP 503 without a fabricated transcript. `PARROT_ASR_TIMEOUT_SECONDS=90` limits the prediction wait; connection/upload requests have a separate 30-second network timeout. A timeout requests cancellation, but does not guarantee that remote computation stops immediately. The Space must remain available and keep its existing three-output `/check_hausa` contract. The default provider without environment configuration is still `local`.
+The token authenticates requests to the Space; ZeroGPU quota is associated with the authenticated account. Space errors and quota failures return HTTP 503 without a fabricated transcript. `PARROT_ASR_TIMEOUT_SECONDS=90` limits the prediction wait; connection/upload requests have a separate 30-second network timeout. A timeout requests cancellation, but does not guarantee that remote computation stops immediately. The Space must remain available and keep its existing three-output `/check_hausa` contract. The default ASR provider is `hf_space`; local inference requires explicit opt-in.
 
-Recordings leave your backend and are uploaded to your partner's Hugging Face Space. The temporary backend WAV is deleted after success or failure. Hugging Face/Gradio may cache the uploaded file remotely; configure retention on the Space before collecting participant recordings. N-ATLaS still runs through your local Ollama instance, so keep it running. The mobile app needs no API changes: it continues to call your backend.
+Recordings leave your backend and are uploaded to your partner's Hugging Face Space. The temporary backend WAV is deleted after success or failure. Hugging Face/Gradio may cache the uploaded file remotely; configure retention on the Space before collecting participant recordings. N-ATLaS runs on the configured generation Space by default; Ollama is optional for laptop testing. The mobile app needs no API changes: it continues to call your backend.
 
 ### Optional local ASR
 

@@ -90,7 +90,7 @@ class HFSpaceProvider:
 
 
 def make_provider() -> Provider:
-    mode = os.getenv('PARROT_PROVIDER', 'ollama')
+    mode = os.getenv('PARROT_PROVIDER', 'hf_space')
     if mode == 'ollama': return OllamaProvider()
     if mode == 'hf_space': return HFSpaceProvider()
     raise ValueError('PARROT_PROVIDER must be ollama or hf_space')

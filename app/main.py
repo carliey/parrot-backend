@@ -14,10 +14,12 @@ from .lessons import (LESSONS, LESSON_VERSION, tutor_prompt, accepts, completed_
 from .provider import make_provider
 from . import general_practice
 from . import tts
+from .runtime import validate_runtime
 from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
 from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
 from .store import Store, now
 
+validate_runtime()
 provider = make_provider()
 store = Store()
 locks: dict[str, asyncio.Lock] = {}

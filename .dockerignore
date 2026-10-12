@@ -1,0 +1,9 @@
+**
+!Dockerfile
+!requirements-runtime.txt
+!app/
+!app/**
+!export_sessions.py
+!summarize_validation.py
+**/__pycache__/
+**/*.pyc
