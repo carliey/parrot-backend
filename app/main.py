@@ -17,7 +17,7 @@ from . import tts
 from .runtime import validate_runtime
 from .hf_errors import HuggingFaceQuotaError
 from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
-from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
+from .asr import configured_model_id, transcribe as transcribe_audio
 from .store import Store, now
 
 validate_runtime()
@@ -330,9 +330,9 @@ async def transcribe(session_id: str, turn_id: str, request: Request,
     ms = int((time.monotonic() - begun) * 1000)
     with store.connect() as db:
         db.execute('INSERT OR IGNORE INTO transcriptions VALUES (?,?,?,?,?,?)',
-                   (session_id, turn_id, transcript, ASR_MODEL_ID, ms, now()))
+                   (session_id, turn_id, transcript, configured_model_id(), ms, now()))
     return TranscriptionResponse(turn_id=turn_id, transcript=transcript,
-                                 asr_model=ASR_MODEL_ID, processing_ms=ms)
+                                 asr_model=configured_model_id(), processing_ms=ms)
 
 
 @app.post('/speech/synthesize')

@@ -51,7 +51,11 @@ Recordings leave your backend and are uploaded to your partner's Hugging Face Sp
 
 ### Optional local ASR
 
-Set `PARROT_ASR_PROVIDER=local` and install `.venv312/bin/pip install -r requirements-speech.txt`. Accept the conditions for [NCAIR1/Hausa-ASR](https://huggingface.co/NCAIR1/Hausa-ASR) on Hugging Face, then authenticate this environment with `.venv312/bin/hf auth login` (or set `HF_TOKEN` in `.env`). The first voice request downloads and loads the official Whisper Small checkpoint; later requests reuse it.
+For this Mac's local development setup, install `.venv312/bin/pip install -r requirements-speech.txt`. Set `PARROT_PROVIDER=ollama` and `PARROT_ASR_PROVIDER=local` in `.env`. This selects the official `NCAIR1/Hausa-ASR` checkpoint. Keep a valid `HF_TOKEN` with model access for the first download; subsequent runs reuse the cached weights. Start Ollama, then run `.venv312/bin/uvicorn app.main:app --env-file .env --host 0.0.0.0 --port 8000 --workers 1`. Restart Uvicorn after changing `.env`; existing shell variables override the file.
+
+Hausa ASR transcribes locally and Ollama generates the tutor reply locally, without consuming HF Space GPU quota. The phone continues to call the backend. The generic OpenAI Whisper base option remains available for experiments using `PARROT_ASR_PROVIDER=whisper`, but is no longer selected because it performed poorly on short Hausa phrases.
+
+Docker Compose and the Dockerfile continue to select `hf_space` for generation and ASR; the laptop settings do not change Dokploy.
 
 In real practice mode, the phone sends the recording bytes to `POST /sessions/{id}/transcriptions/{turn_id}` with the session bearer token. The backend accepts Expo's native upload content type and lets ffmpeg identify and decode the bounded audio to 16 kHz mono, runs `NCAIR1/Hausa-ASR` locally or through the Space, and returns the transcript. The phone then sends that exact transcript to the existing tutor turn endpoint with the same turn ID. The backend links the ASR model, transcript, timing, and tutor reply in the local database. No raw audio is retained on the backend, and the phone deletes its recording after the request.
 

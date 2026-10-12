@@ -10,9 +10,16 @@ from pathlib import Path
 from .hf_errors import HuggingFaceQuotaError, quota_error_message
 
 MODEL_ID = 'NCAIR1/Hausa-ASR'
+WHISPER_MODEL_ID = 'openai/whisper-base'
 _pipe = None
 _load_lock = threading.Lock()
+_whisper_model = None
+_whisper_lock = threading.Lock()
 DEFAULT_SPACE = 'phaeeza/Hausa-tutor-conversation-voice-first'
+
+
+def configured_model_id() -> str:
+    return WHISPER_MODEL_ID if os.getenv('PARROT_ASR_PROVIDER', 'hf_space').strip().lower() == 'whisper' else MODEL_ID
 
 
 class ASRConfigurationError(RuntimeError):
@@ -106,6 +113,32 @@ def _pipeline():
         return _pipe
 
 
+def _openai_whisper():
+    """Load the already-downloaded OpenAI Whisper checkpoint on the laptop."""
+    global _whisper_model
+    with _whisper_lock:
+        if _whisper_model is None:
+            try:
+                import torch
+                import whisper
+            except ImportError as exc:
+                raise RuntimeError(
+                    'Install local Whisper with .venv312/bin/pip install -r requirements-whisper.txt'
+                ) from exc
+            checkpoint = Path(os.getenv(
+                'PARROT_WHISPER_CHECKPOINT',
+                str(Path.home() / '.cache/whisper/base.pt'),
+            )).expanduser()
+            if not checkpoint.is_file():
+                raise RuntimeError(
+                    'Local Whisper checkpoint is missing. Set PARROT_WHISPER_CHECKPOINT '
+                    'to your downloaded multilingual .pt file.'
+                )
+            device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+            _whisper_model = whisper.load_model(str(checkpoint), device=device)
+        return _whisper_model
+
+
 def transcribe(audio: bytes) -> str:
     import numpy as np
 
@@ -125,8 +158,15 @@ def transcribe(audio: bytes) -> str:
     provider = os.getenv('PARROT_ASR_PROVIDER', 'hf_space').strip().lower()
     if provider == 'hf_space':
         return _transcribe_space(samples)
+    if provider == 'whisper':
+        # OpenAI Whisper accepts 16 kHz float32 samples. Keep recognition in Hausa.
+        output = _openai_whisper().transcribe(
+            samples.copy(), language='ha', task='transcribe', fp16=False,
+            condition_on_previous_text=False,
+        )
+        return output['text'].strip()
     if provider != 'local':
-        raise RuntimeError('PARROT_ASR_PROVIDER must be local or hf_space')
+        raise RuntimeError('PARROT_ASR_PROVIDER must be whisper, local or hf_space')
     output = _pipeline()({'array': samples.copy(), 'sampling_rate': 16000},
                          generate_kwargs={'language': 'ha', 'task': 'transcribe'})
     return output['text'].strip()

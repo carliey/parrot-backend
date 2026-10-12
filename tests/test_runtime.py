@@ -8,7 +8,7 @@ def test_remote_default(monkeypatch):
     assert isinstance(make_provider(), HFSpaceProvider)
 
 
-@pytest.mark.parametrize('variable,value', [('PARROT_PROVIDER','ollama'), ('PARROT_ASR_PROVIDER','local')])
+@pytest.mark.parametrize('variable,value', [('PARROT_PROVIDER','ollama'), ('PARROT_ASR_PROVIDER','local'), ('PARROT_ASR_PROVIDER','whisper')])
 def test_container_rejects_local_inference(monkeypatch, variable, value):
     monkeypatch.setenv('PARROT_REMOTE_ONLY','1')
     monkeypatch.setenv('PARROT_PROVIDER','hf_space')

@@ -1,0 +1,4 @@
+# Laptop-only OpenAI Whisper runtime. Never installed by Dockerfile.
+-r requirements-runtime.txt
+openai-whisper
+torch>=2.6,<3
