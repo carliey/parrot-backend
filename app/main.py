@@ -15,6 +15,7 @@ from .provider import make_provider
 from . import general_practice
 from . import tts
 from .runtime import validate_runtime
+from .hf_errors import HuggingFaceQuotaError
 from .schemas import Feedback, FinishResponse, HealthResponse, ReadyResponse, LessonsResponse, StartRequest, StartResponse, TurnRequest, TurnResponse, TranscriptionResponse
 from .asr import MODEL_ID as ASR_MODEL_ID, transcribe as transcribe_audio
 from .store import Store, now
@@ -202,6 +203,11 @@ async def turn(session_id: str, body: TurnRequest, authorization: str | None = H
                                          {'role': 'user', 'content': body.text}])
         except HTTPException:
             raise
+        except HuggingFaceQuotaError as exc:
+            with store.connect() as db:
+                db.execute('INSERT OR REPLACE INTO turns VALUES (?,?,?,?,?,?,?)',
+                           (session_id, body.turn_id, body.text, None, None, 'gpu_quota_exceeded', now()))
+            raise HTTPException(503, detail={'code': 'gpu_quota_exceeded', 'message': str(exc)}) from None
         except Exception as exc:
             with store.connect() as db:
                 db.execute('INSERT OR REPLACE INTO turns VALUES (?,?,?,?,?,?,?)',
@@ -249,6 +255,8 @@ async def finish(session_id: str, authorization: str | None = Header(default=Non
                     break
                 except HTTPException:
                     raise
+                except HuggingFaceQuotaError as exc:
+                    raise HTTPException(503, detail={'code': 'gpu_quota_exceeded', 'message': str(exc)}) from None
                 except Exception:
                     continue
             if feedback is None:
@@ -306,6 +314,9 @@ async def transcribe(session_id: str, turn_id: str, request: Request,
     except ValueError as exc:
         logger.warning('Transcription rejected: invalid_audio (%d uploaded bytes): %s', size, exc)
         raise HTTPException(422, detail={'code': 'invalid_audio', 'message': str(exc)}) from exc
+    except HuggingFaceQuotaError as exc:
+        logger.warning('Hugging Face GPU quota rejected ASR request: %s', exc)
+        raise HTTPException(503, detail={'code': 'gpu_quota_exceeded', 'message': str(exc)}) from None
     except RuntimeError as exc:
         # ASR RuntimeErrors contain safe messages, never remote exception details.
         logger.warning('Transcription unavailable: %s', exc)

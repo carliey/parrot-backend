@@ -7,6 +7,7 @@ import tempfile
 import wave
 from functools import lru_cache
 from pathlib import Path
+from .hf_errors import HuggingFaceQuotaError, quota_error_message
 
 MODEL_ID = 'NCAIR1/Hausa-ASR'
 _pipe = None
@@ -70,6 +71,9 @@ def _transcribe_space(samples) -> str:
             raise RuntimeError('Hausa ASR Space timed out; its queue may be busy. Try again shortly.') from exc
         except Exception as exc:
             # Never return remote exception text: it may contain credentials or URLs.
+            quota_message = quota_error_message(exc)
+            if quota_message:
+                raise HuggingFaceQuotaError(quota_message) from None
             raise RuntimeError(
                 'Hausa ASR Space is unavailable. Check HF_TOKEN in .env, Space status, '
                 'and Hugging Face GPU quota, then retry.'

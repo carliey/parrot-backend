@@ -1,5 +1,6 @@
 import os, json, urllib.request
 from typing import Protocol
+from .hf_errors import HuggingFaceQuotaError, quota_error_message
 
 class Provider(Protocol):
     mode: str
@@ -83,9 +84,12 @@ class HFSpaceProvider:
             if not isinstance(result, str) or not result.strip():
                 raise ValueError('Invalid generation response')
             return result.strip()
-        except Exception:
+        except Exception as exc:
             if job is not None:
                 job.cancel()
+            quota_message = quota_error_message(exc)
+            if quota_message:
+                raise HuggingFaceQuotaError(quota_message) from None
             raise RuntimeError('Hosted tutor unavailable. Check Space status, access and GPU quota.') from None
 
 
